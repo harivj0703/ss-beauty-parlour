@@ -209,14 +209,15 @@ function BookingWizard() {
                       {services.map((s) => {
                         const isSelected = selectedServices.includes(s.id);
                         return (
-                          <div
+                          <button
                             key={s.id}
+                            type="button"
                             onClick={() => {
                               setSelectedServices((prev) =>
                                 isSelected ? prev.filter((id) => id !== s.id) : [...prev, s.id]
                               );
                             }}
-                            className={`p-4 rounded-2xl border transition-all cursor-pointer flex justify-between items-center ${
+                            className={`w-full text-left p-4 rounded-2xl border transition-all cursor-pointer flex justify-between items-center ${
                               isSelected ? 'bg-primary/5 border-primary' : 'border-border hover:bg-primary/5'
                             }`}
                           >
@@ -224,8 +225,7 @@ function BookingWizard() {
                               <p className="font-semibold text-sm">{s.name}</p>
                               <p className="text-xs text-muted mt-0.5">{s.duration} min</p>
                             </div>
-                            <span className="font-bold text-primary text-sm">{formatPrice(s.discountedPrice ?? s.price)}</span>
-                          </div>
+                          </button>
                         );
                       })}
                     </div>
@@ -234,10 +234,11 @@ function BookingWizard() {
                       {packages.map((p) => {
                         const isSelected = selectedPackage === p.id;
                         return (
-                          <div
+                          <button
                             key={p.id}
+                            type="button"
                             onClick={() => setSelectedPackage(p.id)}
-                            className={`p-4 rounded-2xl border transition-all cursor-pointer flex justify-between items-center ${
+                            className={`w-full text-left p-4 rounded-2xl border transition-all cursor-pointer flex justify-between items-center ${
                               isSelected ? 'bg-primary/5 border-primary' : 'border-border hover:bg-primary/5'
                             }`}
                           >
@@ -245,8 +246,7 @@ function BookingWizard() {
                               <p className="font-semibold text-sm">{p.name}</p>
                               <p className="text-xs text-muted mt-0.5">{p.duration} min</p>
                             </div>
-                            <span className="font-bold text-primary text-sm">{formatPrice(p.discountedPrice)}</span>
-                          </div>
+                          </button>
                         );
                       })}
                     </div>
@@ -373,48 +373,33 @@ function BookingWizard() {
                     </button>
                   </div>
                 </motion.div>
-              )}
             </AnimatePresence>
           </div>
 
-          {/* Pricing Summary Sidebar Card */}
+          {/* Selection Summary Sidebar Card */}
           <div className="lg:col-span-1 glass rounded-3xl p-5 border border-primary/10 h-fit space-y-4">
             <h2 className="font-heading font-bold text-lg border-b pb-2">Booking Summary</h2>
 
             <div className="space-y-2.5 text-sm">
               <div className="flex justify-between font-medium">
-                <span>Subtotal</span>
-                <span>{formatPrice(subtotal)}</span>
+                <span>Selected Treatments:</span>
+                <span className="font-bold text-primary">
+                  {bookingType === 'service' ? selectedServices.length : selectedPackage ? 1 : 0}
+                </span>
               </div>
-              {appliedCoupon && (
-                <div className="flex justify-between text-green-600 font-bold">
-                  <span>Discount ({appliedCoupon.code})</span>
-                  <span>-{formatPrice(discount)}</span>
+              {selectedDate && (
+                <div className="flex justify-between text-xs text-muted">
+                  <span>Date:</span>
+                  <span>{selectedDate}</span>
                 </div>
               )}
-              <div className="flex justify-between font-bold text-base border-t pt-2.5 text-primary">
-                <span>Total Amount</span>
-                <span>{formatPrice(total)}</span>
-              </div>
-            </div>
-
-            {/* Coupon Application Panel */}
-            {step === 3 && (
-              <div className="pt-4 border-t border-border/50">
-                <label className="block text-[10px] font-semibold uppercase tracking-wider mb-2 text-muted">Promo Coupon</label>
-                <div className="flex gap-2">
-                  <input
-                    id="booking-coupon"
-                    type="text"
-                    value={couponCode}
-                    onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
-                    placeholder="WELCOME10"
-                    className="input-luxury py-1.5 px-3 text-xs w-full uppercase"
-                  />
-                  <button onClick={handleApplyCoupon} className="btn-luxury py-1.5 px-4 text-xs">Apply</button>
+              {selectedSlot && (
+                <div className="flex justify-between text-xs text-muted">
+                  <span>Time Slot:</span>
+                  <span>{selectedSlot.time}</span>
                 </div>
-              </div>
-            )}
+              )}
+            </div>
           </div>
         </div>
       </div>

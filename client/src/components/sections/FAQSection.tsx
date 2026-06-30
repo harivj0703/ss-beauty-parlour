@@ -6,7 +6,7 @@ import { ChevronDown, MessageCircle } from 'lucide-react';
 import Link from 'next/link';
 
 const faqs = [
-  { q: 'How do I book an appointment?', a: 'You can book online through our website, call us directly at +91 98765 43210, or WhatsApp us. Online booking is available 24/7 and you can choose your preferred service, staff member, and time slot.' },
+  { q: 'How do I book an appointment?', a: 'You can book online through our website, call us directly at +91 97519 72900, or WhatsApp us. Online booking is available 24/7 and you can choose your preferred service, staff member, and time slot.' },
   { q: 'What is your cancellation policy?', a: 'We require 24 hours advance notice for cancellations. Cancellations made within 24 hours may incur a 20% charge. No-shows are charged 50% of the service price. You can reschedule up to 2 hours before your appointment for free.' },
   { q: 'Do you offer group bookings for events?', a: 'Absolutely! We love hosting group events – bachelorette parties, baby showers, birthday celebrations, and corporate wellness days. Contact us for special group packages and exclusive event pricing.' },
   { q: 'What products do you use?', a: 'We use only premium, internationally certified brands including Wella, Schwarzkopf, Kérastase, and Forest Essentials. All products are cruelty-free, dermatologically tested, and safe for sensitive skin.' },

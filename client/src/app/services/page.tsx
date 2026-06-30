@@ -146,11 +146,6 @@ function ServicesList() {
                         fill
                         className="object-cover transition-transform duration-500 group-hover:scale-105"
                       />
-                      {discountPct > 0 && (
-                        <span className="absolute top-3 left-3 bg-gradient-primary text-white text-xs font-bold px-2 py-1 rounded-full">
-                          {discountPct}% OFF
-                        </span>
-                      )}
                     </div>
 
                     {/* Content */}
@@ -173,14 +168,6 @@ function ServicesList() {
                       </div>
 
                       <div className="flex items-center justify-between border-t border-border/40 pt-4">
-                        <div>
-                          <div className="text-lg font-bold text-primary">
-                            {formatPrice(service.discountedPrice ?? service.price)}
-                          </div>
-                          {service.discountedPrice && (
-                            <div className="text-xs text-muted line-through">{formatPrice(service.price)}</div>
-                          )}
-                        </div>
                         <Link href={`/booking?service=${service.id}`} className="btn-luxury px-5 py-2 text-xs">
                           Book Now
                         </Link>

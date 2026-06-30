@@ -86,9 +86,6 @@ export default function PackagesPage() {
                       fill
                       className="object-cover"
                     />
-                    <div className="absolute top-4 left-4 bg-green-500 text-white font-bold text-xs px-2.5 py-1 rounded-md">
-                      SAVE {savingPercent}%
-                    </div>
                   </div>
 
                   {/* Body */}
@@ -113,16 +110,6 @@ export default function PackagesPage() {
 
                     {/* Pricing */}
                     <div className="pt-4 border-t border-border mt-auto">
-                      <div className="flex items-baseline justify-between mb-4">
-                        <div>
-                          <div className="text-2xl font-bold text-primary">{formatPrice(pkg.discountedPrice)}</div>
-                          <div className="text-xs text-muted line-through">{formatPrice(pkg.originalPrice)}</div>
-                        </div>
-                        <div className="text-xs bg-green-100 text-green-800 px-2.5 py-1 rounded-md font-bold">
-                          Save {formatPrice(saving)}
-                        </div>
-                      </div>
-
                       <Link href={`/booking?package=${pkg.id}`} className="btn-luxury w-full flex items-center justify-center gap-2">
                         Book Package Deal <ArrowRight className="w-4 h-4" />
                       </Link>
