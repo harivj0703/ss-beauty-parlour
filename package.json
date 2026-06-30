@@ -1,0 +1,12 @@
+{
+  "name": "ss-beauty-parlour-root",
+  "version": "1.0.0",
+  "description": "SS Beauty Parlour Monorepo Root",
+  "scripts": {
+    "install:client": "npm install --prefix client",
+    "install:server": "npm install --prefix server",
+    "build:client": "npm run build --prefix client",
+    "build:server": "npm run build --prefix server",
+    "start:server": "npm start --prefix server"
+  }
+}

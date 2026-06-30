@@ -1,0 +1,30 @@
+import { Router } from 'express';
+import authRoutes from './auth.routes';
+import serviceRoutes from './service.routes';
+import appointmentRoutes from './appointment.routes';
+import paymentRoutes from './payment.routes';
+import adminRoutes from './admin.routes';
+import staffRoutes from './staff.routes';
+import reviewRoutes from './review.routes';
+import blogRoutes from './blog.routes';
+import galleryRoutes from './gallery.routes';
+import notificationRoutes from './notification.routes';
+import contactRoutes from './contact.routes';
+import wishlistRoutes from './wishlist.routes';
+import couponRoutes from './coupon.routes';
+
+export const router = Router();
+
+router.use('/auth', authRoutes);
+router.use('/services', serviceRoutes);
+router.use('/appointments', appointmentRoutes);
+router.use('/payments', paymentRoutes);
+router.use('/admin', adminRoutes);
+router.use('/staff', staffRoutes);
+router.use('/reviews', reviewRoutes);
+router.use('/blog', blogRoutes);
+router.use('/gallery', galleryRoutes);
+router.use('/notifications', notificationRoutes);
+router.use('/contact', contactRoutes);
+router.use('/wishlist', wishlistRoutes);
+router.use('/coupons', couponRoutes);

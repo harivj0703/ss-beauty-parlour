@@ -1,0 +1,193 @@
+import nodemailer from 'nodemailer';
+import { logger } from './logger';
+
+const createTransporter = () => {
+  return nodemailer.createTransport({
+    host: process.env.SMTP_HOST || 'smtp.mailtrap.io',
+    port: parseInt(process.env.SMTP_PORT || '587', 10),
+    auth: {
+      user: process.env.SMTP_USER,
+      pass: process.env.SMTP_PASS,
+    },
+  });
+};
+
+const getEmailWrapper = (content: string, title: string) => `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>${title}</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Segoe UI', Arial, sans-serif; background: #FFF8FB; color: #2D2D2D; }
+    .container { max-width: 600px; margin: 40px auto; background: #fff; border-radius: 20px; overflow: hidden; box-shadow: 0 10px 40px rgba(233,30,99,0.1); }
+    .header { background: linear-gradient(135deg, #E91E63, #AD1457); padding: 40px 30px; text-align: center; }
+    .header h1 { color: #fff; font-size: 28px; font-weight: 700; letter-spacing: 1px; margin-bottom: 6px; }
+    .header p { color: rgba(255,255,255,0.85); font-size: 14px; }
+    .logo-dot { width: 8px; height: 8px; background: #FFD700; border-radius: 50%; display: inline-block; margin: 0 4px; }
+    .body { padding: 40px 36px; }
+    .greeting { font-size: 20px; font-weight: 600; color: #E91E63; margin-bottom: 16px; }
+    .text { font-size: 15px; line-height: 1.7; color: #555; margin-bottom: 20px; }
+    .card { background: linear-gradient(135deg, #FFF0F5, #FFF8FB); border: 1px solid #F8BBD0; border-radius: 14px; padding: 24px; margin: 24px 0; }
+    .card-row { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #FADADD; font-size: 14px; }
+    .card-row:last-child { border-bottom: none; }
+    .card-label { color: #888; font-weight: 500; }
+    .card-value { color: #2D2D2D; font-weight: 600; }
+    .btn { display: inline-block; background: linear-gradient(135deg, #E91E63, #C2185B); color: #fff; text-decoration: none; padding: 14px 32px; border-radius: 50px; font-size: 15px; font-weight: 600; margin: 20px 0; letter-spacing: 0.5px; }
+    .footer { background: #2D2D2D; color: #aaa; text-align: center; padding: 28px; font-size: 13px; }
+    .footer a { color: #E91E63; text-decoration: none; }
+    .gold-line { height: 3px; background: linear-gradient(90deg, #FFD700, #FFA000, #FFD700); }
+    .badge { display: inline-block; background: #E91E63; color: #fff; padding: 4px 12px; border-radius: 50px; font-size: 12px; margin-bottom: 16px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>🌸 Glow Beauty Studio <span class="logo-dot"></span></h1>
+      <p>Where Beauty Meets Perfection</p>
+    </div>
+    <div class="gold-line"></div>
+    <div class="body">
+      ${content}
+    </div>
+    <div class="footer">
+      <p>© ${new Date().getFullYear()} Glow Beauty Studio. All rights reserved.</p>
+      <p style="margin-top: 8px;">
+        <a href="#">Unsubscribe</a> &nbsp;•&nbsp;
+        <a href="#">Privacy Policy</a> &nbsp;•&nbsp;
+        <a href="#">Contact Us</a>
+      </p>
+      <p style="margin-top: 12px; font-size: 11px; color: #666;">
+        This email was sent by Glow Beauty Studio. Please do not reply to this email.
+      </p>
+    </div>
+  </div>
+</body>
+</html>
+`;
+
+const sendEmail = async (to: string, subject: string, html: string): Promise<void> => {
+  try {
+    const transporter = createTransporter();
+    await transporter.sendMail({
+      from: `"Glow Beauty Studio" <${process.env.SMTP_FROM || 'noreply@glowbeautystudio.com'}>`,
+      to,
+      subject,
+      html,
+    });
+    logger.info(`Email sent to ${to}: ${subject}`);
+  } catch (error) {
+    logger.error(`Failed to send email to ${to}:`, error);
+  }
+};
+
+export const sendWelcomeEmail = async (to: string, firstName: string): Promise<void> => {
+  const content = `
+    <div class="badge">Welcome to the Family! 💕</div>
+    <div class="greeting">Hello, ${firstName}! 🌸</div>
+    <p class="text">Welcome to <strong>Glow Beauty Studio</strong> – your new home for luxury beauty treatments! We're absolutely thrilled to have you with us.</p>
+    <p class="text">Your beauty journey begins now. Explore our wide range of premium services – from glamorous bridal makeup to rejuvenating spa treatments. You deserve to look and feel your absolute best!</p>
+    <div class="card">
+      <div class="card-row"><span class="card-label">🎁 First Booking Offer</span><span class="card-value">10% OFF</span></div>
+      <div class="card-row"><span class="card-label">🏷️ Use Code</span><span class="card-value">WELCOME10</span></div>
+      <div class="card-row"><span class="card-label">⏰ Valid For</span><span class="card-value">30 Days</span></div>
+    </div>
+    <a href="${process.env.CLIENT_URL}/services" class="btn">Explore Services ✨</a>
+    <p class="text">If you have any questions, our team is always here to help. We can't wait to make you feel gorgeous!</p>
+    <p class="text">With love & beauty,<br><strong>The Glow Beauty Studio Team 💄</strong></p>
+  `;
+  await sendEmail(to, '💕 Welcome to Glow Beauty Studio!', getEmailWrapper(content, 'Welcome'));
+};
+
+export const sendBookingConfirmation = async (
+  to: string,
+  data: {
+    appointmentId: string;
+    serviceName: string;
+    date: string;
+    time: string;
+    staffName: string;
+    amount: number;
+    customerName: string;
+  }
+): Promise<void> => {
+  const content = `
+    <div class="badge">Booking Confirmed! ✅</div>
+    <div class="greeting">Hi, ${data.customerName}! 🌸</div>
+    <p class="text">Great news! Your appointment at <strong>Glow Beauty Studio</strong> has been successfully confirmed. We're looking forward to pampering you!</p>
+    <div class="card">
+      <div class="card-row"><span class="card-label">📋 Service</span><span class="card-value">${data.serviceName}</span></div>
+      <div class="card-row"><span class="card-label">📅 Date</span><span class="card-value">${data.date}</span></div>
+      <div class="card-row"><span class="card-label">⏰ Time</span><span class="card-value">${data.time}</span></div>
+      <div class="card-row"><span class="card-label">💆 Stylist</span><span class="card-value">${data.staffName}</span></div>
+      <div class="card-row"><span class="card-label">💰 Amount</span><span class="card-value">₹${data.amount.toLocaleString('en-IN')}</span></div>
+      <div class="card-row"><span class="card-label">🔖 Booking ID</span><span class="card-value">#${data.appointmentId.slice(-8).toUpperCase()}</span></div>
+    </div>
+    <p class="text">Please arrive 10 minutes before your appointment. If you need to reschedule or cancel, please do so at least 24 hours in advance.</p>
+    <a href="${process.env.CLIENT_URL}/dashboard" class="btn">View My Booking 📱</a>
+    <p class="text">See you soon! 💕<br><strong>Glow Beauty Studio Team</strong></p>
+  `;
+  await sendEmail(to, '✅ Booking Confirmed – Glow Beauty Studio', getEmailWrapper(content, 'Booking Confirmation'));
+};
+
+export const sendPasswordReset = async (to: string, resetLink: string): Promise<void> => {
+  const content = `
+    <div class="badge">Password Reset Request 🔐</div>
+    <div class="greeting">Password Reset Request</div>
+    <p class="text">We received a request to reset your Glow Beauty Studio account password. Click the button below to create a new password:</p>
+    <a href="${resetLink}" class="btn">Reset My Password 🔐</a>
+    <div class="card">
+      <div class="card-row"><span class="card-label">⏰ Link expires in</span><span class="card-value">1 Hour</span></div>
+    </div>
+    <p class="text">If you didn't request this password reset, please ignore this email. Your password will remain unchanged and your account is safe.</p>
+    <p class="text">For security, never share this link with anyone.</p>
+    <p class="text">Stay beautiful,<br><strong>Glow Beauty Studio Team 💄</strong></p>
+  `;
+  await sendEmail(to, '🔐 Reset Your Glow Beauty Studio Password', getEmailWrapper(content, 'Password Reset'));
+};
+
+export const sendAppointmentReminder = async (
+  to: string,
+  data: { serviceName: string; date: string; time: string; customerName: string }
+): Promise<void> => {
+  const content = `
+    <div class="badge">Appointment Reminder ⏰</div>
+    <div class="greeting">Hi, ${data.customerName}! 🌸</div>
+    <p class="text">Just a friendly reminder that your appointment at <strong>Glow Beauty Studio</strong> is tomorrow. We're excited to see you!</p>
+    <div class="card">
+      <div class="card-row"><span class="card-label">📋 Service</span><span class="card-value">${data.serviceName}</span></div>
+      <div class="card-row"><span class="card-label">📅 Date</span><span class="card-value">${data.date}</span></div>
+      <div class="card-row"><span class="card-label">⏰ Time</span><span class="card-value">${data.time}</span></div>
+    </div>
+    <p class="text">💡 <strong>Tips for your visit:</strong><br>
+    • Arrive 10 minutes early<br>
+    • Come with clean, dry hair (for hair services)<br>
+    • Wear comfortable clothing</p>
+    <a href="${process.env.CLIENT_URL}/dashboard" class="btn">View Appointment Details 📱</a>
+    <p class="text">See you tomorrow! 💕<br><strong>Glow Beauty Studio Team</strong></p>
+  `;
+  await sendEmail(to, '⏰ Appointment Reminder – Tomorrow at Glow Beauty', getEmailWrapper(content, 'Reminder'));
+};
+
+export const sendCancellationEmail = async (
+  to: string,
+  data: { serviceName: string; date: string; amount: number; customerName: string }
+): Promise<void> => {
+  const content = `
+    <div class="badge">Booking Cancelled</div>
+    <div class="greeting">Hi, ${data.customerName}</div>
+    <p class="text">We're sorry to hear that you've cancelled your appointment. Your booking for <strong>${data.serviceName}</strong> on <strong>${data.date}</strong> has been successfully cancelled.</p>
+    <div class="card">
+      <div class="card-row"><span class="card-label">📋 Service</span><span class="card-value">${data.serviceName}</span></div>
+      <div class="card-row"><span class="card-label">📅 Date</span><span class="card-value">${data.date}</span></div>
+      <div class="card-row"><span class="card-label">💰 Refund Amount</span><span class="card-value">₹${data.amount.toLocaleString('en-IN')}</span></div>
+      <div class="card-row"><span class="card-label">⏳ Refund Timeline</span><span class="card-value">5-7 Business Days</span></div>
+    </div>
+    <p class="text">We hope to see you again soon! Feel free to book another appointment whenever you're ready.</p>
+    <a href="${process.env.CLIENT_URL}/booking" class="btn">Book Again 🌸</a>
+    <p class="text">Take care,<br><strong>Glow Beauty Studio Team 💄</strong></p>
+  `;
+  await sendEmail(to, 'Booking Cancelled – Glow Beauty Studio', getEmailWrapper(content, 'Cancellation'));
+};
