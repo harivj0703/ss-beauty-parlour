@@ -8,5 +8,13 @@
     "build:client": "npm run build --prefix client",
     "build:server": "npm run build --prefix server",
     "start:server": "npm start --prefix server"
+  },
+  "dependencies": {
+    "bcryptjs": "^3.0.3"
+  },
+  "devDependencies": {
+    "@types/bcryptjs": "^2.4.6",
+    "typescript": "^5.3.3",
+    "ts-node": "^10.9.2"
   }
 }
