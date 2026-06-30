@@ -8,7 +8,7 @@ import { Lock, Sparkles, ArrowLeft } from 'lucide-react';
 import api from '@/lib/api';
 import toast from 'react-hot-toast';
 
-export default function ResetPasswordPage() {
+function ResetPasswordForm() {
   const [password, setPassword] = useState('');
   const [confirm, setConfirm] = useState('');
   const [token, setToken] = useState<string | null>(null);
@@ -106,5 +106,13 @@ export default function ResetPasswordPage() {
         </div>
       </motion.div>
     </div>
+  );
+}
+
+export default function ResetPasswordPage() {
+  return (
+    <React.Suspense fallback={<div className="min-h-screen flex items-center justify-center">Loading...</div>}>
+      <ResetPasswordForm />
+    </React.Suspense>
   );
 }
