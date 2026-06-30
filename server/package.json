@@ -10,7 +10,8 @@
     "prisma:generate": "prisma generate",
     "prisma:push": "prisma db push",
     "prisma:seed": "ts-node ../prisma/seed.ts",
-    "prisma:deploy": "npx prisma db push --schema=../prisma/schema.prisma --accept-data-loss && npx tsc ../prisma/seed.ts --outDir ../prisma/dist --module commonjs --esModuleInterop --skipLibCheck && node ../prisma/dist/seed.js",
+    "prisma:deploy": "npx prisma db push --schema=../prisma/schema.prisma --accept-data-loss",
+    "prisma:seed:run": "cd ../server && npx ts-node --transpile-only --project tsconfig.json ../prisma/seed.ts",
     "prisma:studio": "prisma studio"
   },
   "dependencies": {
