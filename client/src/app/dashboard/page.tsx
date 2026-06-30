@@ -181,9 +181,6 @@ export default function UserDashboard() {
                       </div>
 
                       <div className="flex md:flex-col items-baseline md:items-end justify-between w-full md:w-auto pt-3 md:pt-0 border-t md:border-t-0 border-border/40">
-                        <div className="text-lg font-bold text-primary mb-2">
-                          {formatPrice(app.finalAmount)}
-                        </div>
                         <div className="flex gap-2">
                           {['PENDING', 'CONFIRMED'].includes(app.status) && (
                             <button

@@ -185,18 +185,6 @@ export default function PopularPackages() {
 
                   {/* Pricing Details */}
                   <div className="pt-4 border-t border-border mt-auto">
-                    <div className="flex items-baseline justify-between mb-4">
-                      <div>
-                        <div className="text-2xl font-bold text-gradient">{formatPrice(pkg.discountedPrice)}</div>
-                        <div className="text-xs text-muted">
-                          Instead of <span className="line-through">{formatPrice(pkg.originalPrice)}</span>
-                        </div>
-                      </div>
-                      <div className="text-xs bg-green-50 text-green-700 px-2.5 py-1 rounded-md font-semibold">
-                        Save {formatPrice(saving)}
-                      </div>
-                    </div>
-
                     <Link
                       href={`/booking?package=${pkg.id}`}
                       className="btn-luxury w-full text-sm font-semibold flex items-center justify-center gap-2 py-3"

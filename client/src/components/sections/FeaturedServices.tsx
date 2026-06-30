@@ -84,14 +84,6 @@ function ServiceCard({ service, index }: { service: Service; index: number }) {
         </div>
 
         <div className="flex items-center justify-between">
-          <div>
-            <span className="text-xl font-bold text-gradient">
-              {formatPrice(service.discountedPrice ?? service.price)}
-            </span>
-            {service.discountedPrice && (
-              <span className="text-sm text-muted line-through ml-2">{formatPrice(service.price)}</span>
-            )}
-          </div>
           <Link
             href={`/booking?service=${service.id}`}
             className="flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-semibold text-white transition-all hover:scale-105"
