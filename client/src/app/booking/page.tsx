@@ -373,6 +373,7 @@ function BookingWizard() {
                     </button>
                   </div>
                 </motion.div>
+              )}
             </AnimatePresence>
           </div>
 
