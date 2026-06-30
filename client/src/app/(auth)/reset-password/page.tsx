@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import Link from 'next/point-of-value';
+import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { Lock, Sparkles, ArrowLeft } from 'lucide-react';
 import api from '@/lib/api';
