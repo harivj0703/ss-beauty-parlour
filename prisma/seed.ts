@@ -319,8 +319,8 @@ async function main() {
 
   // ── Notifications ─────────────────────────────────────────────────
   const notifications = [
-    { userId: admin.id, title: 'Welcome to SS Beauty Parlour', message: 'Glad to have you manage SS Beauty Parlour! Check bookings daily.', type: 'GENERAL' },
-    { userId: admin.id, title: 'Settings Updated', message: 'Address and mobile details were updated successfully.', type: 'GENERAL' }
+    { userId: admin.id, title: 'Welcome to SS Beauty Parlour', message: 'Glad to have you manage SS Beauty Parlour! Check bookings daily.', type: 'GENERAL' as const },
+    { userId: admin.id, title: 'Settings Updated', message: 'Address and mobile details were updated successfully.', type: 'GENERAL' as const }
   ];
 
   for (const notif of notifications) {
