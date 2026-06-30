@@ -30,7 +30,7 @@ interface Service {
   categoryId: string;
 }
 
-export default function ServicesPage() {
+function ServicesList() {
   const searchParams = useSearchParams();
   const [categories, setCategories] = useState<Category[]>([]);
   const [services, setServices] = useState<Service[]>([]);
@@ -194,5 +194,13 @@ export default function ServicesPage() {
         )}
       </div>
     </div>
+  );
+}
+
+export default function ServicesPage() {
+  return (
+    <React.Suspense fallback={<div className="min-h-screen flex items-center justify-center">Loading...</div>}>
+      <ServicesList />
+    </React.Suspense>
   );
 }
