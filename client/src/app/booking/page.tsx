@@ -35,7 +35,7 @@ interface Slot {
   available: boolean;
 }
 
-export default function BookingPage() {
+function BookingWizard() {
   const { user, isAuthenticated } = useAuth();
   const router = useRouter();
 
@@ -419,5 +419,13 @@ export default function BookingPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function BookingPage() {
+  return (
+    <React.Suspense fallback={<div className="min-h-screen flex items-center justify-center">Loading...</div>}>
+      <BookingWizard />
+    </React.Suspense>
   );
 }
