@@ -14,7 +14,7 @@ async function main() {
     create: {
       email: 'admin@glowbeauty.com',
       password: adminPass,
-      firstName: 'Priya',
+      firstName: 'Silambu',
       lastName: 'Sharma',
       phone: '+91 98765 43210',
       role: Role.ADMIN,
