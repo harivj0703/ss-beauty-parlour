@@ -1,37 +1,14 @@
-import nodemailer from 'nodemailer';
+import sgMail from '@sendgrid/mail';
 import { logger } from './logger';
 
-const createTransporter = () => {
-  const host = process.env.EMAIL_HOST || process.env.SMTP_HOST || 'smtp.gmail.com';
-  const portRaw = process.env.EMAIL_PORT || process.env.SMTP_PORT || '465';
-  const port = parseInt(portRaw, 10);
-  const user = process.env.EMAIL_USER || process.env.SMTP_USER;
-  const pass = process.env.EMAIL_PASS || process.env.SMTP_PASS;
+// Retrieve SendGrid API Key from environment variable
+const sendgridApiKey = process.env.SENDGRID_API_KEY;
 
-  if (!user || !pass) {
-    console.warn('[EMAIL] WARNING: EMAIL_USER / EMAIL_PASS not set. Emails will NOT be sent. Configure these in Render environment variables.');
-  }
-
-  const transporter = nodemailer.createTransport({
-    host,
-    port,
-    secure: false, // Use STARTTLS on port 587
-    auth: {
-      user,
-      pass,
-    },
-    requireTLS: true,
-    tls: {
-      rejectUnauthorized: false,
-    },
-  });
-  
-  transporter.verify()
-    .then(() => console.log('[EMAIL TRACE] SMTP Verify: SUCCESS'))
-    .catch((err) => console.error('[EMAIL TRACE] SMTP Verify: FAILED', err));
-
-  return transporter;
-};
+if (!sendgridApiKey) {
+  console.warn('[EMAIL] WARNING: SENDGRID_API_KEY not set. Emails will NOT be sent. Configure this in Render environment variables.');
+} else {
+  sgMail.setApiKey(sendgridApiKey);
+}
 
 const getEmailWrapper = (content: string, title: string) => `
 <!DOCTYPE html>
@@ -90,52 +67,35 @@ const getEmailWrapper = (content: string, title: string) => `
 `;
 
 const sendEmail = async (to: string, subject: string, html: string): Promise<any> => {
-  console.log("EMAIL FILE VERSION: 2026-07-01");
-  const transporter = createTransporter();
-  const sender = process.env.EMAIL_FROM || process.env.EMAIL_USER || process.env.SMTP_USER || '"SS Beauty Parlour" <ssbeautyparlour2528@gmail.com>';
+  console.log("EMAIL FILE VERSION: 2026-07-01 SENDGRID");
+  const sender = process.env.EMAIL_FROM || process.env.EMAIL_USER || process.env.SMTP_USER || 'ssbeautyparlour2528@gmail.com';
   
-  const mailOptions = {
-    from: sender,
+  const msg = {
     to,
+    from: sender, // This MUST be the email address you verified in SendGrid Single Sender
     subject,
     html,
   };
 
-  console.log(`[EMAIL TRACE] mailOptions.to: ${mailOptions.to}`);
-  console.log(`[EMAIL TRACE] mailOptions.from: ${mailOptions.from}`);
-  console.log(`[EMAIL TRACE] mailOptions.subject: ${mailOptions.subject}`);
+  console.log(`[EMAIL TRACE] msg.to: ${msg.to}`);
+  console.log(`[EMAIL TRACE] msg.from: ${msg.from}`);
+  console.log(`[EMAIL TRACE] msg.subject: ${msg.subject}`);
   
-  console.log("========== STEP 1 ==========");
-  console.log("========== STEP 2 ==========");
-  console.log("========== BEFORE transporter.sendMail() ==========");
+  console.log("========== BEFORE sgMail.send() ==========");
   let result;
   try {
-    result = await transporter.sendMail(mailOptions);
+    result = await sgMail.send(msg);
   } catch (err: any) {
-    console.error("SENDMAIL FAILED");
+    console.error("SENDGRID FAILED");
     console.error(err);
-    console.error(err.stack);
-    console.error("[EMAIL TRACE] err.code:", err.code);
-    console.error("[EMAIL TRACE] err.command:", err.command);
-    console.error("[EMAIL TRACE] err.response:", err.response);
-    console.error("[EMAIL TRACE] err.responseCode:", err.responseCode);
-    console.error("[EMAIL TRACE] err.message:", err.message);
-    console.error("[EMAIL TRACE] err.stack:", err.stack);
+    if (err.response) {
+      console.error(err.response.body);
+    }
     throw err;
   }
   
-  console.log("AFTER transporter.sendMail()");
-  console.log(result);
-  
-  console.log(`[EMAIL TRACE] SMTP RESPONSE: ${result.response}`);
-  console.log(`[EMAIL TRACE] Message ID: ${result.messageId}`);
-  console.log(`[EMAIL TRACE] Accepted recipients: ${JSON.stringify(result.accepted)}`);
-  console.log(`[EMAIL TRACE] Rejected recipients: ${JSON.stringify(result.rejected)}`);
-  
-  if (result.rejected && result.rejected.length > 0) {
-    console.log(`[EMAIL TRACE] REJECTED ADDRESSES: ${JSON.stringify(result.rejected)}`);
-  }
-
+  console.log("========== AFTER sgMail.send() ==========");
+  console.log(`[EMAIL TRACE] SENDGRID RESPONSE CODE: ${result[0].statusCode}`);
   return result;
 };
 
