@@ -2,14 +2,16 @@ import nodemailer from 'nodemailer';
 import { logger } from './logger';
 
 const createTransporter = () => {
-  return nodemailer.createTransport({
-    host: process.env.EMAIL_HOST || process.env.SMTP_HOST || 'smtp.mailtrap.io',
-    port: parseInt(process.env.EMAIL_PORT || process.env.SMTP_PORT || '587', 10),
-    auth: {
-      user: process.env.EMAIL_USER || process.env.SMTP_USER,
-      pass: process.env.EMAIL_PASS || process.env.SMTP_PASS,
-    },
-  });
+  const host = process.env.EMAIL_HOST || process.env.SMTP_HOST || 'smtp.mailtrap.io';
+  const port = parseInt(process.env.EMAIL_PORT || process.env.SMTP_PORT || '587', 10);
+  const user = process.env.EMAIL_USER || process.env.SMTP_USER;
+  const pass = process.env.EMAIL_PASS || process.env.SMTP_PASS;
+
+  const config: any = { host, port };
+  if (user && pass) {
+    config.auth = { user, pass };
+  }
+  return nodemailer.createTransport(config);
 };
 
 const getEmailWrapper = (content: string, title: string) => `
