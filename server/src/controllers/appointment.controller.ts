@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
 import { PrismaClient } from '@prisma/client';
 import { AuthenticatedRequest, CreateAppointmentBody } from '../types';
-import { sendBookingConfirmation, sendCancellationEmail } from '../utils/email';
+import { sendBookingConfirmation, sendCancellationEmail, sendAdminBookingNotification } from '../utils/email';
 import { generateInvoiceNumber } from '../utils/invoice';
 
 const prisma = new PrismaClient();
@@ -324,7 +324,6 @@ export const createAppointment = async (req: AuthenticatedRequest, res: Response
           .catch(err => console.error('STEP 5.a: CUSTOMER EMAIL DISPATCH EXCEPTION:', err));
 
         // 5.b Send booking alert email to Admin
-        const { sendAdminBookingNotification } = await import('../utils/email');
         await sendAdminBookingNotification({
           appointmentId: appointment.id,
           customerName: user.firstName,
