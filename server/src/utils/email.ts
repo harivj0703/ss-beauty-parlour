@@ -179,6 +179,7 @@ export const sendBookingConfirmation = async (
     customerName: string;
   }
 ): Promise<void> => {
+  console.log("===== REAL BOOKING EMAIL FUNCTION =====");
   let content = '';
   try {
     content = `
