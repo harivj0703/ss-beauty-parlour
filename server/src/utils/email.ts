@@ -14,8 +14,8 @@ const createTransporter = () => {
   const config: any = {
     host,
     port,
-    secure: false, // Port 587 uses STARTTLS
-    requireTLS: true,
+    secure: port === 465, // True for 465, False for 587
+    requireTLS: port !== 465,
     connectionTimeout: 30000,
     greetingTimeout: 30000,
     socketTimeout: 30000,
