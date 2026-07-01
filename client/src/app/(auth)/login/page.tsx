@@ -13,7 +13,7 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const [showPass, setShowPass] = useState(false);
   const [loading, setLoading] = useState(false);
-  const { login } = useAuth();
+  const { login, user } = useAuth();
   const router = useRouter();
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -23,13 +23,32 @@ export default function LoginPage() {
     try {
       await login(email, password);
       toast.success('Welcome back to SS Beauty Parlour! 💕');
-      router.push('/dashboard');
+      // Redirect admin users to admin dashboard, others to customer dashboard
+      const loggedInUser = user;
+      // We read the role from the returned login response via localStorage trick
+      // The login function sets user state; we check after a tick
+      setTimeout(() => {
+        const stored = localStorage.getItem('accessToken');
+        if (!stored) { router.push('/login'); return; }
+        // Parse role from JWT payload (base64 decode middle part)
+        try {
+          const payload = JSON.parse(atob(stored.split('.')[1]));
+          if (payload.role === 'ADMIN') {
+            router.push('/admin');
+          } else {
+            router.push('/dashboard');
+          }
+        } catch {
+          router.push('/dashboard');
+        }
+      }, 100);
     } catch (err: any) {
       toast.error(err.response?.data?.message || 'Login failed. Please check your credentials.');
     } finally {
       setLoading(false);
     }
   };
+
 
   return (
     <div className="min-h-screen pt-28 pb-16 flex items-center justify-center relative overflow-hidden bg-background">

@@ -2,15 +2,30 @@ import nodemailer from 'nodemailer';
 import { logger } from './logger';
 
 const createTransporter = () => {
-  const host = process.env.EMAIL_HOST || process.env.SMTP_HOST || 'smtp.mailtrap.io';
-  const port = parseInt(process.env.EMAIL_PORT || process.env.SMTP_PORT || '587', 10);
+  const host = process.env.EMAIL_HOST || process.env.SMTP_HOST || 'smtp.gmail.com';
+  const portRaw = process.env.EMAIL_PORT || process.env.SMTP_PORT || '465';
+  const port = parseInt(portRaw, 10);
   const user = process.env.EMAIL_USER || process.env.SMTP_USER;
   const pass = process.env.EMAIL_PASS || process.env.SMTP_PASS;
 
-  const config: any = { host, port };
+  if (!user || !pass) {
+    logger.warn('[EMAIL] WARNING: EMAIL_USER / EMAIL_PASS not set. Emails will NOT be sent. Configure these in Render environment variables.');
+  }
+
+  // port 465 = implicit SSL (secure:true), port 587 = STARTTLS (secure:false)
+  const secure = port === 465;
+
+  const config: any = {
+    host,
+    port,
+    secure,
+    tls: { rejectUnauthorized: false },
+  };
+
   if (user && pass) {
     config.auth = { user, pass };
   }
+
   return nodemailer.createTransport(config);
 };
 
