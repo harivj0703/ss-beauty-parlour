@@ -75,10 +75,7 @@ export const errorHandler = (
   // ── Generic 500 ──────────────────────────────────────────────────
   res.status(500).json({
     success: false,
-    message:
-      process.env.NODE_ENV === 'production'
-        ? 'An internal server error occurred'
-        : err.message,
+    message: err.message || 'An internal server error occurred',
   });
 };
 
