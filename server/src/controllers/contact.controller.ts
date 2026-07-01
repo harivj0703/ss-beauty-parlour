@@ -12,6 +12,21 @@ export const submitContact = async (req: Request, res: Response): Promise<void> 
   }
 
   const contact = await prisma.contactMessage.create({ data: { name, email, phone, subject, message } });
+  
+  // Send email notification to Admin asynchronously
+  const ipAddress = req.ip || req.headers['x-forwarded-for'] as string || '';
+  import('../utils/email').then(async (mail) => {
+    await mail.sendAdminInquiryNotification({
+      customerName: name,
+      customerEmail: email,
+      customerPhone: phone || '',
+      subject,
+      message,
+      submissionDate: new Date().toLocaleDateString('en-IN', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' }),
+      ipAddress: ipAddress || undefined
+    }).catch(console.error);
+  }).catch(console.error);
+
   res.status(201).json({ success: true, message: 'Message sent! We will get back to you soon 🌸', data: { id: contact.id } });
 };
 

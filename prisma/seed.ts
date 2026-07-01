@@ -9,10 +9,10 @@ async function main() {
   // ── Admin User ──────────────────────────────────────────────────────
   const adminPass = await bcrypt.hash('Admin@123', 12);
   const admin = await prisma.user.upsert({
-    where: { email: 'admin@glowbeauty.com' },
+    where: { email: 'ssbeautyparlour2528@gmail.com' },
     update: {},
     create: {
-      email: 'admin@glowbeauty.com',
+      email: 'ssbeautyparlour2528@gmail.com',
       password: adminPass,
       firstName: 'Silambu',
       lastName: '',
@@ -329,7 +329,7 @@ async function main() {
   console.log('✅ Sample notifications created');
 
   console.log('\n🎉 Database seeded successfully!');
-  console.log('📧 Admin login: admin@glowbeauty.com / Admin@123');
+  console.log('📧 Admin login: ssbeautyparlour2528@gmail.com / Admin@123');
   console.log('📧 Staff login: silambu@ssbeautyparlour.com / Staff@123');
 }
 

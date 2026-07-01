@@ -240,7 +240,7 @@ export const createAppointment = async (req: AuthenticatedRequest, res: Response
         },
       });
 
-      // 4. Create notification
+      // 4. Create customer notification
       await tx.notification.create({
         data: {
           userId: req.user!.userId,
@@ -251,6 +251,23 @@ export const createAppointment = async (req: AuthenticatedRequest, res: Response
         },
       });
 
+      // 4.b Find Admin user to record a dashboard notification for them
+      const adminUser = await tx.user.findFirst({
+        where: { role: 'ADMIN', isActive: true },
+        select: { id: true }
+      });
+      if (adminUser) {
+        await tx.notification.create({
+          data: {
+            userId: adminUser.id,
+            type: 'NEW_BOOKING',
+            title: 'New Booking Received',
+            message: `Customer: ${req.user!.userId}, Service: ${services[0]?.name}, Status: PENDING`,
+            data: { appointmentId: appt.id }
+          }
+        });
+      }
+
       return appt;
     });
   } catch (dbError: any) {
@@ -259,26 +276,49 @@ export const createAppointment = async (req: AuthenticatedRequest, res: Response
     return;
   }
 
-  // 5. Send confirmation email asynchronously (do not block client response)
-  prisma.user.findUnique({ where: { id: req.user!.userId }, select: { email: true, firstName: true } })
+  // 5. Send confirmation emails asynchronously (do not block client response)
+  prisma.user.findUnique({ where: { id: req.user!.userId }, select: { email: true, firstName: true, phone: true } })
     .then(async (user) => {
       if (user && appointment) {
         const staffName = appointment.staffProfile
           ? `${appointment.staffProfile.user.firstName} ${appointment.staffProfile.user.lastName}`
           : 'Our Expert';
+        
+        const dateStr = scheduledDate.toLocaleDateString('en-IN', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+        const timeStr = scheduledDate.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
+        const serviceNames = services.map((s) => s.name).join(', ');
+
+        // 5.a Send confirmation email to Customer
         await sendBookingConfirmation(user.email, {
           appointmentId: appointment.id,
-          serviceName: services.map((s) => s.name).join(', '),
-          date: scheduledDate.toLocaleDateString('en-IN', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }),
-          time: scheduledDate.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }),
+          serviceName: serviceNames,
+          date: dateStr,
+          time: timeStr,
           staffName,
           amount: finalAmount,
           customerName: user.firstName,
-        });
+        }).catch(console.error);
+
+        // 5.b Send booking alert email to Admin
+        const { sendAdminBookingNotification } = await import('../utils/email');
+        await sendAdminBookingNotification({
+          appointmentId: appointment.id,
+          customerName: user.firstName,
+          customerEmail: user.email,
+          customerPhone: user.phone || '',
+          serviceName: serviceNames,
+          packageName: pkg ? pkg.name : undefined,
+          staffName,
+          date: dateStr,
+          time: timeStr,
+          paymentStatus: 'PENDING',
+          specialNotes: notes || '',
+          bookingStatus: 'PENDING',
+        }).catch(console.error);
       }
     })
     .catch((emailErr) => {
-      console.error('Asynchronous booking confirmation email failed:', emailErr);
+      console.error('Asynchronous booking confirmation emails failed:', emailErr);
     });
 
   res.status(201).json({ success: true, message: 'Appointment booked successfully! 🎉', data: appointment });

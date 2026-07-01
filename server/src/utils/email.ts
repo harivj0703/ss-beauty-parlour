@@ -3,11 +3,11 @@ import { logger } from './logger';
 
 const createTransporter = () => {
   return nodemailer.createTransport({
-    host: process.env.SMTP_HOST || 'smtp.mailtrap.io',
-    port: parseInt(process.env.SMTP_PORT || '587', 10),
+    host: process.env.EMAIL_HOST || process.env.SMTP_HOST || 'smtp.mailtrap.io',
+    port: parseInt(process.env.EMAIL_PORT || process.env.SMTP_PORT || '587', 10),
     auth: {
-      user: process.env.SMTP_USER,
-      pass: process.env.SMTP_PASS,
+      user: process.env.EMAIL_USER || process.env.SMTP_USER,
+      pass: process.env.EMAIL_PASS || process.env.SMTP_PASS,
     },
   });
 };
@@ -45,7 +45,7 @@ const getEmailWrapper = (content: string, title: string) => `
 <body>
   <div class="container">
     <div class="header">
-      <h1>🌸 Glow Beauty Studio <span class="logo-dot"></span></h1>
+      <h1>🌸 SS Beauty Parlour <span class="logo-dot"></span></h1>
       <p>Where Beauty Meets Perfection</p>
     </div>
     <div class="gold-line"></div>
@@ -53,14 +53,14 @@ const getEmailWrapper = (content: string, title: string) => `
       ${content}
     </div>
     <div class="footer">
-      <p>© ${new Date().getFullYear()} Glow Beauty Studio. All rights reserved.</p>
+      <p>© ${new Date().getFullYear()} SS Beauty Parlour. All rights reserved.</p>
       <p style="margin-top: 8px;">
         <a href="#">Unsubscribe</a> &nbsp;•&nbsp;
         <a href="#">Privacy Policy</a> &nbsp;•&nbsp;
         <a href="#">Contact Us</a>
       </p>
       <p style="margin-top: 12px; font-size: 11px; color: #666;">
-        This email was sent by Glow Beauty Studio. Please do not reply to this email.
+        This email was sent by SS Beauty Parlour. Please do not reply to this email.
       </p>
     </div>
   </div>
@@ -72,7 +72,7 @@ const sendEmail = async (to: string, subject: string, html: string): Promise<voi
   try {
     const transporter = createTransporter();
     await transporter.sendMail({
-      from: `"Glow Beauty Studio" <${process.env.SMTP_FROM || 'noreply@glowbeautystudio.com'}>`,
+      from: `"SS Beauty Parlour" <${process.env.EMAIL_FROM || process.env.SMTP_FROM || 'noreply@ssbeautyparlour.com'}>`,
       to,
       subject,
       html,
@@ -87,7 +87,7 @@ export const sendWelcomeEmail = async (to: string, firstName: string): Promise<v
   const content = `
     <div class="badge">Welcome to the Family! 💕</div>
     <div class="greeting">Hello, ${firstName}! 🌸</div>
-    <p class="text">Welcome to <strong>Glow Beauty Studio</strong> – your new home for luxury beauty treatments! We're absolutely thrilled to have you with us.</p>
+    <p class="text">Welcome to <strong>SS Beauty Parlour</strong> – your new home for luxury beauty treatments! We're absolutely thrilled to have you with us.</p>
     <p class="text">Your beauty journey begins now. Explore our wide range of premium services – from glamorous bridal makeup to rejuvenating spa treatments. You deserve to look and feel your absolute best!</p>
     <div class="card">
       <div class="card-row"><span class="card-label">🎁 First Booking Offer</span><span class="card-value">10% OFF</span></div>
@@ -96,9 +96,9 @@ export const sendWelcomeEmail = async (to: string, firstName: string): Promise<v
     </div>
     <a href="${process.env.CLIENT_URL}/services" class="btn">Explore Services ✨</a>
     <p class="text">If you have any questions, our team is always here to help. We can't wait to make you feel gorgeous!</p>
-    <p class="text">With love & beauty,<br><strong>The Glow Beauty Studio Team 💄</strong></p>
+    <p class="text">With love & beauty,<br><strong>The SS Beauty Parlour Team 💄</strong></p>
   `;
-  await sendEmail(to, '💕 Welcome to Glow Beauty Studio!', getEmailWrapper(content, 'Welcome'));
+  await sendEmail(to, '💕 Welcome to SS Beauty Parlour!', getEmailWrapper(content, 'Welcome'));
 };
 
 export const sendBookingConfirmation = async (
@@ -116,36 +116,37 @@ export const sendBookingConfirmation = async (
   const content = `
     <div class="badge">Booking Confirmed! ✅</div>
     <div class="greeting">Hi, ${data.customerName}! 🌸</div>
-    <p class="text">Great news! Your appointment at <strong>Glow Beauty Studio</strong> has been successfully confirmed. We're looking forward to pampering you!</p>
+    <p class="text">Great news! Your appointment at <strong>SS Beauty Parlour</strong> has been successfully confirmed. We're looking forward to pampering you!</p>
     <div class="card">
+      <div class="card-row"><span class="card-label">🔖 Booking ID</span><span class="card-value">#${data.appointmentId.slice(-8).toUpperCase()}</span></div>
       <div class="card-row"><span class="card-label">📋 Service</span><span class="card-value">${data.serviceName}</span></div>
       <div class="card-row"><span class="card-label">📅 Date</span><span class="card-value">${data.date}</span></div>
       <div class="card-row"><span class="card-label">⏰ Time</span><span class="card-value">${data.time}</span></div>
       <div class="card-row"><span class="card-label">💆 Stylist</span><span class="card-value">${data.staffName}</span></div>
       <div class="card-row"><span class="card-label">💰 Amount</span><span class="card-value">₹${data.amount.toLocaleString('en-IN')}</span></div>
-      <div class="card-row"><span class="card-label">🔖 Booking ID</span><span class="card-value">#${data.appointmentId.slice(-8).toUpperCase()}</span></div>
     </div>
-    <p class="text">Please arrive 10 minutes before your appointment. If you need to reschedule or cancel, please do so at least 24 hours in advance.</p>
+    <p class="text">📍 <strong>Salon Address:</strong><br>Old Bus Stand Opposite, Chengam, Thiruvannamalai District, Tamilnadu</p>
+    <p class="text">⚠️ <strong>Cancellation Policy:</strong><br>Please arrive 10 minutes before your appointment. If you need to reschedule or cancel, please do so at least 24 hours in advance.</p>
     <a href="${process.env.CLIENT_URL}/dashboard" class="btn">View My Booking 📱</a>
-    <p class="text">See you soon! 💕<br><strong>Glow Beauty Studio Team</strong></p>
+    <p class="text">See you soon! 💕<br><strong>SS Beauty Parlour Team</strong></p>
   `;
-  await sendEmail(to, '✅ Booking Confirmed – Glow Beauty Studio', getEmailWrapper(content, 'Booking Confirmation'));
+  await sendEmail(to, '✅ Booking Confirmed – SS Beauty Parlour', getEmailWrapper(content, 'Booking Confirmation'));
 };
 
 export const sendPasswordReset = async (to: string, resetLink: string): Promise<void> => {
   const content = `
     <div class="badge">Password Reset Request 🔐</div>
     <div class="greeting">Password Reset Request</div>
-    <p class="text">We received a request to reset your Glow Beauty Studio account password. Click the button below to create a new password:</p>
+    <p class="text">We received a request to reset your SS Beauty Parlour account password. Click the button below to create a new password:</p>
     <a href="${resetLink}" class="btn">Reset My Password 🔐</a>
     <div class="card">
       <div class="card-row"><span class="card-label">⏰ Link expires in</span><span class="card-value">1 Hour</span></div>
     </div>
     <p class="text">If you didn't request this password reset, please ignore this email. Your password will remain unchanged and your account is safe.</p>
     <p class="text">For security, never share this link with anyone.</p>
-    <p class="text">Stay beautiful,<br><strong>Glow Beauty Studio Team 💄</strong></p>
+    <p class="text">Stay beautiful,<br><strong>SS Beauty Parlour Team 💄</strong></p>
   `;
-  await sendEmail(to, '🔐 Reset Your Glow Beauty Studio Password', getEmailWrapper(content, 'Password Reset'));
+  await sendEmail(to, '🔐 Reset Your SS Beauty Parlour Password', getEmailWrapper(content, 'Password Reset'));
 };
 
 export const sendAppointmentReminder = async (
@@ -155,7 +156,7 @@ export const sendAppointmentReminder = async (
   const content = `
     <div class="badge">Appointment Reminder ⏰</div>
     <div class="greeting">Hi, ${data.customerName}! 🌸</div>
-    <p class="text">Just a friendly reminder that your appointment at <strong>Glow Beauty Studio</strong> is tomorrow. We're excited to see you!</p>
+    <p class="text">Just a friendly reminder that your appointment at <strong>SS Beauty Parlour</strong> is tomorrow. We're excited to see you!</p>
     <div class="card">
       <div class="card-row"><span class="card-label">📋 Service</span><span class="card-value">${data.serviceName}</span></div>
       <div class="card-row"><span class="card-label">📅 Date</span><span class="card-value">${data.date}</span></div>
@@ -166,9 +167,9 @@ export const sendAppointmentReminder = async (
     • Come with clean, dry hair (for hair services)<br>
     • Wear comfortable clothing</p>
     <a href="${process.env.CLIENT_URL}/dashboard" class="btn">View Appointment Details 📱</a>
-    <p class="text">See you tomorrow! 💕<br><strong>Glow Beauty Studio Team</strong></p>
+    <p class="text">See you tomorrow! 💕<br><strong>SS Beauty Parlour Team</strong></p>
   `;
-  await sendEmail(to, '⏰ Appointment Reminder – Tomorrow at Glow Beauty', getEmailWrapper(content, 'Reminder'));
+  await sendEmail(to, '⏰ Appointment Reminder – Tomorrow at SS Beauty Parlour', getEmailWrapper(content, 'Reminder'));
 };
 
 export const sendCancellationEmail = async (
@@ -187,7 +188,87 @@ export const sendCancellationEmail = async (
     </div>
     <p class="text">We hope to see you again soon! Feel free to book another appointment whenever you're ready.</p>
     <a href="${process.env.CLIENT_URL}/booking" class="btn">Book Again 🌸</a>
-    <p class="text">Take care,<br><strong>Glow Beauty Studio Team 💄</strong></p>
+    <p class="text">Take care,<br><strong>SS Beauty Parlour Team 💄</strong></p>
   `;
-  await sendEmail(to, 'Booking Cancelled – Glow Beauty Studio', getEmailWrapper(content, 'Cancellation'));
+  await sendEmail(to, 'Booking Cancelled – SS Beauty Parlour', getEmailWrapper(content, 'Cancellation'));
+};
+
+// ── Admin Notification Emails ────────────────────────────────────────
+
+export const sendAdminBookingNotification = async (
+  data: {
+    appointmentId: string;
+    customerName: string;
+    customerEmail: string;
+    customerPhone: string;
+    serviceName: string;
+    packageName?: string;
+    staffName: string;
+    date: string;
+    time: string;
+    paymentStatus: string;
+    specialNotes: string;
+    bookingStatus: string;
+  }
+): Promise<void> => {
+  const adminEmail = process.env.ADMIN_EMAIL || 'ssbeautyparlour2528@gmail.com';
+  const content = `
+    <div class="badge">New Booking Received 📅</div>
+    <div class="greeting">Hello, Admin!</div>
+    <p class="text">A new appointment has been successfully booked at <strong>SS Beauty Parlour</strong>. Here are the details:</p>
+    
+    <div class="card">
+      <div class="card-row"><span class="card-label">🔖 Booking ID</span><span class="card-value">#${data.appointmentId.slice(-8).toUpperCase()}</span></div>
+      <div class="card-row"><span class="card-label">👤 Customer Name</span><span class="card-value">${data.customerName}</span></div>
+      <div class="card-row"><span class="card-label">✉️ Customer Email</span><span class="card-value">${data.customerEmail}</span></div>
+      <div class="card-row"><span class="card-label">📞 Customer Phone</span><span class="card-value">${data.customerPhone || 'N/A'}</span></div>
+      <div class="card-row"><span class="card-label">📋 Service Name</span><span class="card-value">${data.serviceName}</span></div>
+      ${data.packageName ? `<div class="card-row"><span class="card-label">🎁 Package</span><span class="card-value">${data.packageName}</span></div>` : ''}
+      <div class="card-row"><span class="card-label">💆 Staff Assigned</span><span class="card-value">${data.staffName}</span></div>
+      <div class="card-row"><span class="card-label">📅 Date</span><span class="card-value">${data.date}</span></div>
+      <div class="card-row"><span class="card-label">⏰ Time</span><span class="card-value">${data.time}</span></div>
+      <div class="card-row"><span class="card-label">💰 Payment Status</span><span class="card-value">${data.paymentStatus}</span></div>
+      <div class="card-row"><span class="card-label">📝 Special Notes</span><span class="card-value">${data.specialNotes || 'None'}</span></div>
+      <div class="card-row"><span class="card-label">⚡ Booking Status</span><span class="card-value">${data.bookingStatus}</span></div>
+    </div>
+    
+    <a href="${process.env.CLIENT_URL || 'https://ss-beauty-parlour.vercel.app'}/admin/appointments" class="btn">View Booking on Admin Dashboard 🖥️</a>
+  `;
+  
+  await sendEmail(adminEmail, 'New Appointment Booking', getEmailWrapper(content, 'New Booking Alert'));
+};
+
+export const sendAdminInquiryNotification = async (
+  data: {
+    customerName: string;
+    customerEmail: string;
+    customerPhone: string;
+    subject: string;
+    message: string;
+    submissionDate: string;
+    ipAddress?: string;
+  }
+): Promise<void> => {
+  const adminEmail = process.env.ADMIN_EMAIL || 'ssbeautyparlour2528@gmail.com';
+  const content = `
+    <div class="badge" style="background:#FFA000;">New Customer Inquiry ✉️</div>
+    <div class="greeting">Hello, Admin!</div>
+    <p class="text">A new customer message has been received from the Contact Us form:</p>
+    
+    <div class="card">
+      <div class="card-row"><span class="card-label">👤 Customer Name</span><span class="card-value">${data.customerName}</span></div>
+      <div class="card-row"><span class="card-label">✉️ Email</span><span class="card-value">${data.customerEmail}</span></div>
+      <div class="card-row"><span class="card-label">📞 Phone</span><span class="card-value">${data.customerPhone || 'N/A'}</span></div>
+      <div class="card-row"><span class="card-label">📌 Subject</span><span class="card-value">${data.subject}</span></div>
+      <div class="card-row"><span class="card-label">⏰ Submission Date</span><span class="card-value">${data.submissionDate}</span></div>
+      ${data.ipAddress ? `<div class="card-row"><span class="card-label">🌐 IP Address</span><span class="card-value">${data.ipAddress}</span></div>` : ''}
+    </div>
+    
+    <div class="card" style="background:#FFF;">
+      <h4 style="color:#E91E63; margin-bottom:8px; font-size:13px;">MESSAGE:</h4>
+      <p style="font-size:14px; line-height:1.6; color:#555; white-space:pre-wrap;">${data.message}</p>
+    </div>
+  `;
+  
+  await sendEmail(adminEmail, 'New Customer Inquiry', getEmailWrapper(content, 'Inquiry Alert'));
 };
