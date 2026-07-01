@@ -92,37 +92,61 @@ const getEmailWrapper = (content: string, title: string) => `
 `;
 
 const sendEmail = async (to: string, subject: string, html: string): Promise<any> => {
+  const transporter = createTransporter();
+  const sender = process.env.EMAIL_FROM || process.env.EMAIL_USER || process.env.SMTP_USER || '"SS Beauty Parlour" <ssbeautyparlour2528@gmail.com>';
+  
+  const mailOptions = {
+    from: sender,
+    to,
+    subject,
+    html,
+  };
+
+  console.log(`[EMAIL TRACE] mailOptions.to: ${mailOptions.to}`);
+  console.log(`[EMAIL TRACE] mailOptions.from: ${mailOptions.from}`);
+  console.log(`[EMAIL TRACE] mailOptions.subject: ${mailOptions.subject}`);
+  
+  const opts = transporter.options as any;
+  console.log(`[EMAIL TRACE] transporter.options:`, {
+    host: opts.host,
+    port: opts.port,
+    secure: opts.secure,
+    requireTLS: opts.requireTLS,
+    connectionTimeout: opts.connectionTimeout,
+    greetingTimeout: opts.greetingTimeout,
+    socketTimeout: opts.socketTimeout
+  });
+
+  console.log("BEFORE transporter.sendMail()");
+  let result;
   try {
-    const transporter = createTransporter();
-    const sender = process.env.EMAIL_FROM || process.env.EMAIL_USER || process.env.SMTP_USER || '"SS Beauty Parlour" <ssbeautyparlour2528@gmail.com>';
-    
-    const mailOptions = {
-      from: sender,
-      to,
-      subject,
-      html,
-    };
-
-    console.log(`[EMAIL TRACE] mailOptions.to: ${mailOptions.to}`);
-    console.log(`[EMAIL TRACE] mailOptions.from: ${mailOptions.from}`);
-    console.log(`[EMAIL TRACE] mailOptions.subject: ${mailOptions.subject}`);
-    
-    const info = await transporter.sendMail(mailOptions);
-    
-    console.log(`[EMAIL TRACE] SMTP RESPONSE: ${info.response}`);
-    console.log(`[EMAIL TRACE] Message ID: ${info.messageId}`);
-    console.log(`[EMAIL TRACE] Accepted recipients: ${JSON.stringify(info.accepted)}`);
-    console.log(`[EMAIL TRACE] Rejected recipients: ${JSON.stringify(info.rejected)}`);
-    
-    if (info.rejected && info.rejected.length > 0) {
-      console.log(`[EMAIL TRACE] REJECTED ADDRESSES: ${JSON.stringify(info.rejected)}`);
-    }
-
-    return info;
-  } catch (error) {
-    console.error(`[EMAIL TRACE] EMAIL FAILED:`, error);
-    throw error;
+    result = await transporter.sendMail(mailOptions);
+  } catch (err: any) {
+    console.error("SENDMAIL FAILED");
+    console.error(err);
+    console.error(err.stack);
+    console.error("[EMAIL TRACE] err.code:", err.code);
+    console.error("[EMAIL TRACE] err.command:", err.command);
+    console.error("[EMAIL TRACE] err.response:", err.response);
+    console.error("[EMAIL TRACE] err.responseCode:", err.responseCode);
+    console.error("[EMAIL TRACE] err.message:", err.message);
+    console.error("[EMAIL TRACE] err.stack:", err.stack);
+    throw err;
   }
+  
+  console.log("AFTER transporter.sendMail()");
+  console.log(result);
+  
+  console.log(`[EMAIL TRACE] SMTP RESPONSE: ${result.response}`);
+  console.log(`[EMAIL TRACE] Message ID: ${result.messageId}`);
+  console.log(`[EMAIL TRACE] Accepted recipients: ${JSON.stringify(result.accepted)}`);
+  console.log(`[EMAIL TRACE] Rejected recipients: ${JSON.stringify(result.rejected)}`);
+  
+  if (result.rejected && result.rejected.length > 0) {
+    console.log(`[EMAIL TRACE] REJECTED ADDRESSES: ${JSON.stringify(result.rejected)}`);
+  }
+
+  return result;
 };
 
 export const sendWelcomeEmail = async (to: string, firstName: string): Promise<void> => {
