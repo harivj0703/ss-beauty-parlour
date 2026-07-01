@@ -88,8 +88,9 @@ const getEmailWrapper = (content: string, title: string) => `
 const sendEmail = async (to: string, subject: string, html: string): Promise<void> => {
   try {
     const transporter = createTransporter();
+    const sender = process.env.EMAIL_FROM || process.env.EMAIL_USER || process.env.SMTP_USER || '"SS Beauty Parlour" <ssbeautyparlour2528@gmail.com>';
     await transporter.sendMail({
-      from: `"SS Beauty Parlour" <${process.env.EMAIL_FROM || process.env.SMTP_FROM || 'noreply@ssbeautyparlour.com'}>`,
+      from: sender,
       to,
       subject,
       html,
