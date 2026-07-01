@@ -11,6 +11,21 @@ import { router } from './routes/index';
 import { errorHandler } from './middleware/errorHandler';
 import { logger } from './utils/logger';
 
+// ── Temporary Log Interceptor ────────────────────────────────────────
+export const globalLogs: string[] = [];
+const originalLog = console.log;
+const originalError = console.error;
+const originalWarn = console.warn;
+
+const addToLogs = (type: string, args: any[]) => {
+  globalLogs.push(`[${type}] ${new Date().toISOString()} - ${args.map(a => typeof a === 'object' ? JSON.stringify(a) : a).join(' ')}`);
+  if (globalLogs.length > 100) globalLogs.shift();
+};
+
+console.log = (...args) => { addToLogs('INFO', args); originalLog.apply(console, args); };
+console.error = (...args) => { addToLogs('ERROR', args); originalError.apply(console, args); };
+console.warn = (...args) => { addToLogs('WARN', args); originalWarn.apply(console, args); };
+
 const app = express();
 
 // ── Security Middleware ──────────────────────────────────────────────
@@ -73,8 +88,12 @@ app.get('/health', (_req, res) => {
     status: 'ok',
     service: 'Glow Beauty Studio API',
     timestamp: new Date().toISOString(),
-    version: '1.0.0',
   });
+});
+
+// ── Temporary Logs Endpoint ──────────────────────────────────────────
+app.get('/api/v1/logs', (_req, res) => {
+  res.json({ success: true, logs: globalLogs });
 });
 
 // ── 404 Handler ──────────────────────────────────────────────────────

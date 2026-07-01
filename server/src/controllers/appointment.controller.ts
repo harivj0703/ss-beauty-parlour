@@ -83,7 +83,8 @@ export const getAvailableSlots = async (req: Request, res: Response): Promise<vo
 
 // ── Create Appointment ───────────────────────────────────────────────
 export const createAppointment = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
-  console.log('STEP 1: RECEIVED BOOKING REQUEST', JSON.stringify(req.body));
+  console.log('[EMAIL TRACE] BOOKING REQUEST RECEIVED');
+  console.log('[EMAIL TRACE] PAYLOAD:', JSON.stringify(req.body));
   
   const { serviceIds, packageId, staffProfileId, scheduledAt, notes, couponCode } =
     req.body as CreateAppointmentBody;
@@ -290,9 +291,9 @@ export const createAppointment = async (req: AuthenticatedRequest, res: Response
 
       return appt;
     });
-    console.log('STEP 4.c: DB TRANSACTION COMMITTED SUCCESSFULLY');
+    console.log('[EMAIL TRACE] APPOINTMENT CREATED (Transaction committed)');
   } catch (dbError: any) {
-    console.error('STEP 3/4 FAILURE - DATABASE TRANSACTION EXCEPTION:', dbError);
+    console.error('[EMAIL TRACE] DATABASE TRANSACTION EXCEPTION:', dbError);
     res.status(500).json({ success: false, message: 'Booking failed. Try a different slot.' });
     return;
   }
@@ -311,6 +312,8 @@ export const createAppointment = async (req: AuthenticatedRequest, res: Response
 
         console.log('STEP 5: DISPATCHING ASYNCHRONOUS EMAILS');
 
+        console.log('[EMAIL TRACE] CALLING sendBookingConfirmation() for CUSTOMER:', user.email);
+
         // 5.a Send confirmation email to Customer
         await sendBookingConfirmation(user.email, {
           appointmentId: appointment.id,
@@ -320,9 +323,11 @@ export const createAppointment = async (req: AuthenticatedRequest, res: Response
           staffName,
           amount: finalAmount,
           customerName: user.firstName,
-        }).then(() => console.log('STEP 5.a: CUSTOMER CONFIRMATION EMAIL SENT SUCCESS'))
-          .catch(err => console.error('STEP 5.a: CUSTOMER EMAIL DISPATCH EXCEPTION:', err));
+        }).then(() => console.log('[EMAIL TRACE] sendBookingConfirmation() COMPLETED SUCCESSFULLY'))
+          .catch(err => console.error('[EMAIL TRACE] sendBookingConfirmation() FAILED:', err));
 
+        console.log('[EMAIL TRACE] CALLING sendAdminBookingNotification() for ADMIN');
+        
         // 5.b Send booking alert email to Admin
         await sendAdminBookingNotification({
           appointmentId: appointment.id,
@@ -337,15 +342,17 @@ export const createAppointment = async (req: AuthenticatedRequest, res: Response
           paymentStatus: 'PENDING',
           specialNotes: notes || '',
           bookingStatus: 'PENDING',
-        }).then(() => console.log('STEP 5.b: ADMIN BOOKING EMAIL SENT SUCCESS'))
-          .catch(err => console.error('STEP 5.b: ADMIN EMAIL DISPATCH EXCEPTION:', err));
+        }).then(() => console.log('[EMAIL TRACE] sendAdminBookingNotification() COMPLETED SUCCESSFULLY'))
+          .catch(err => console.error('[EMAIL TRACE] sendAdminBookingNotification() FAILED:', err));
+      } else {
+        console.warn('[EMAIL TRACE] SKIPPED EMAIL SENDING - user or appointment is null', { userExists: !!user, appointmentExists: !!appointment });
       }
     })
     .catch((emailErr) => {
-      console.error('STEP 5 ASYNC FLOW EXCEPTION:', emailErr);
+      console.error('[EMAIL TRACE] TOP LEVEL ASYNC FLOW EXCEPTION:', emailErr);
     });
 
-  console.log('STEP 6: RETURNING HTTP 201 SUCCESS RESPONSE TO CLIENT');
+  console.log('[EMAIL TRACE] RETURNING HTTP 201 SUCCESS RESPONSE TO CLIENT');
   res.status(201).json({ success: true, message: 'Appointment booked successfully! 🎉', data: appointment });
   return;
 };

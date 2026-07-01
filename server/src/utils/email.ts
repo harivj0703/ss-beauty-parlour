@@ -85,19 +85,30 @@ const getEmailWrapper = (content: string, title: string) => `
 </html>
 `;
 
-const sendEmail = async (to: string, subject: string, html: string): Promise<void> => {
+const sendEmail = async (to: string, subject: string, html: string): Promise<any> => {
+  console.log(`[EMAIL TRACE] ENTERED email.ts - sendEmail()`);
+  console.log(`[EMAIL TRACE] RECIPIENT: ${to}`);
+  console.log(`[EMAIL TRACE] SUBJECT: ${subject}`);
   try {
     const transporter = createTransporter();
     const sender = process.env.EMAIL_FROM || process.env.EMAIL_USER || process.env.SMTP_USER || '"SS Beauty Parlour" <ssbeautyparlour2528@gmail.com>';
-    await transporter.sendMail({
+    console.log(`[EMAIL TRACE] FROM ADDRESS: ${sender}`);
+    
+    console.log(`[EMAIL TRACE] ABOUT TO EXECUTE transporter.sendMail()`);
+    const info = await transporter.sendMail({
       from: sender,
       to,
       subject,
       html,
     });
-    logger.info(`Email sent to ${to}: ${subject}`);
+    
+    console.log(`[EMAIL TRACE] SMTP RESPONSE:`, info.response);
+    console.log(`[EMAIL TRACE] MESSAGE ID:`, info.messageId);
+    console.log(`[EMAIL TRACE] EMAIL SENT SUCCESSFULLY`);
+    return info;
   } catch (error) {
-    logger.error(`Failed to send email to ${to}:`, error);
+    console.error(`[EMAIL TRACE] SMTP EXCEPTION THROWN:`, error);
+    throw error; // DO NOT CATCH AND HIDE EXCEPTIONS
   }
 };
 
