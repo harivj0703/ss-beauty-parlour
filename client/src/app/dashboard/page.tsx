@@ -27,12 +27,14 @@ interface Appointment {
 }
 
 export default function UserDashboard() {
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
 
   useEffect(() => {
+    if (authLoading) return;
+
     if (!user) {
       router.push('/login');
       return;
@@ -44,7 +46,7 @@ export default function UserDashboard() {
         setLoading(false);
       })
       .catch(() => setLoading(false));
-  }, [user, router]);
+  }, [user, authLoading, router]);
 
   const handleCancel = async (id: string) => {
     if (!confirm('Are you sure you want to cancel this appointment?')) return;

@@ -27,13 +27,15 @@ interface Appointment {
 }
 
 export default function AdminDashboard() {
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({ totalBookings: 0, completed: 0, pending: 0, revenue: 0 });
   const router = useRouter();
 
   useEffect(() => {
+    if (authLoading) return;
+
     if (!user || user.role !== 'ADMIN') {
       router.push('/login');
       return;
@@ -62,7 +64,7 @@ export default function AdminDashboard() {
         setLoading(false);
       })
       .catch(() => setLoading(false));
-  }, [user, router]);
+  }, [user, authLoading, router]);
 
   const handleUpdateStatus = async (id: string, status: string) => {
     try {
@@ -75,6 +77,14 @@ export default function AdminDashboard() {
       toast.error('Failed to update booking status');
     }
   };
+
+  if (authLoading || (!user || user.role !== 'ADMIN')) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background pt-28 pb-16">
