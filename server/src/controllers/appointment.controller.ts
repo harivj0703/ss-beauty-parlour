@@ -142,18 +142,20 @@ export const createAppointment = async (req: AuthenticatedRequest, res: Response
   }
 
   // Check slot availability
-  const conflicting = await prisma.appointment.findFirst({
-    where: {
-      staffProfileId: staffProfileId || undefined,
-      status: { notIn: ['CANCELLED'] },
-      OR: [
-        { scheduledAt: { lt: endTime }, endTime: { gt: scheduledDate } },
-      ],
-    },
-  });
-  if (conflicting && staffProfileId) {
-    res.status(409).json({ success: false, message: 'This time slot is already booked for the selected staff' });
-    return;
+  if (staffProfileId) {
+    const conflicting = await prisma.appointment.findFirst({
+      where: {
+        staffProfileId: staffProfileId,
+        status: { notIn: ['CANCELLED'] },
+        OR: [
+          { scheduledAt: { lt: endTime }, endTime: { gt: scheduledDate } },
+        ],
+      },
+    });
+    if (conflicting) {
+      res.status(409).json({ success: false, message: 'This time slot is already booked for the selected staff' });
+      return;
+    }
   }
 
   // Assign any available staff if not specified
