@@ -257,12 +257,22 @@ export const createAppointment = async (req: AuthenticatedRequest, res: Response
         select: { id: true }
       });
       if (adminUser) {
+        // Fetch customer name for notification text
+        const customer = await tx.user.findUnique({
+          where: { id: req.user!.userId },
+          select: { firstName: true, phone: true }
+        });
+        const customerName = customer ? customer.firstName : 'Client';
+        const customerPhone = customer ? (customer.phone || 'N/A') : 'N/A';
+        const dateStr = scheduledDate.toLocaleDateString('en-IN');
+        const timeStr = scheduledDate.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
+
         await tx.notification.create({
           data: {
             userId: adminUser.id,
             type: 'GENERAL',
             title: 'New Booking Received',
-            message: `Customer: ${req.user!.userId}, Service: ${services[0]?.name}, Status: PENDING`,
+            message: `Customer: ${customerName} (Phone: ${customerPhone}), Service: ${services[0]?.name}, Date: ${dateStr}, Time: ${timeStr}, Status: PENDING`,
             data: { appointmentId: appt.id }
           }
         });
