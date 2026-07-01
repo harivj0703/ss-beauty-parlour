@@ -24,7 +24,8 @@ export const submitContact = async (req: Request, res: Response): Promise<void> 
     message,
     submissionDate: new Date().toLocaleDateString('en-IN', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' }),
     ipAddress: ipAddress || undefined
-  }).catch(console.error);
+  }).then(() => console.log('[EMAIL TRACE] Contact Email Sent SUCCESS'))
+    .catch(err => console.error('[EMAIL TRACE] Contact Email FAILED:', err));
 
   res.status(201).json({ success: true, message: 'Message sent! We will get back to you soon 🌸', data: { id: contact.id } });
 };

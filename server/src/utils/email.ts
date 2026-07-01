@@ -3,22 +3,22 @@ import { logger } from './logger';
 
 const createTransporter = () => {
   const host = process.env.EMAIL_HOST || process.env.SMTP_HOST || 'smtp.gmail.com';
-  const portRaw = process.env.EMAIL_PORT || process.env.SMTP_PORT || '465';
-  const port = parseInt(portRaw, 10);
+  const port = parseInt(process.env.EMAIL_PORT || process.env.SMTP_PORT || '587', 10);
   const user = process.env.EMAIL_USER || process.env.SMTP_USER;
   const pass = process.env.EMAIL_PASS || process.env.SMTP_PASS;
 
   if (!user || !pass) {
-    logger.warn('[EMAIL] WARNING: EMAIL_USER / EMAIL_PASS not set. Emails will NOT be sent. Configure these in Render environment variables.');
+    console.warn('[EMAIL] WARNING: EMAIL_USER / EMAIL_PASS not set. Emails will NOT be sent. Configure these in Render environment variables.');
   }
-
-  // port 465 = implicit SSL (secure:true), port 587 = STARTTLS (secure:false)
-  const secure = port === 465;
 
   const config: any = {
     host,
     port,
-    secure,
+    secure: false, // Port 587 uses STARTTLS
+    requireTLS: true,
+    connectionTimeout: 30000,
+    greetingTimeout: 30000,
+    socketTimeout: 30000,
     tls: { rejectUnauthorized: false },
   };
 
@@ -26,7 +26,13 @@ const createTransporter = () => {
     config.auth = { user, pass };
   }
 
-  return nodemailer.createTransport(config);
+  const transporter = nodemailer.createTransport(config);
+  
+  transporter.verify()
+    .then(() => console.log('[EMAIL TRACE] SMTP Verify: SUCCESS'))
+    .catch((err) => console.error('[EMAIL TRACE] SMTP Verify: FAILED', err));
+
+  return transporter;
 };
 
 const getEmailWrapper = (content: string, title: string) => `

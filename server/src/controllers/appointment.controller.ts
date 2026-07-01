@@ -323,8 +323,8 @@ export const createAppointment = async (req: AuthenticatedRequest, res: Response
           staffName,
           amount: finalAmount,
           customerName: user.firstName,
-        }).then(() => console.log('[EMAIL TRACE] sendBookingConfirmation() COMPLETED SUCCESSFULLY'))
-          .catch(err => console.error('[EMAIL TRACE] sendBookingConfirmation() FAILED:', err));
+        }).then(() => console.log('[EMAIL TRACE] Customer Booking Email Sent SUCCESS'))
+          .catch(err => console.error('[EMAIL TRACE] Customer Booking Email FAILED:', err));
 
         console.log('[EMAIL TRACE] CALLING sendAdminBookingNotification() for ADMIN');
         
@@ -342,8 +342,8 @@ export const createAppointment = async (req: AuthenticatedRequest, res: Response
           paymentStatus: 'PENDING',
           specialNotes: notes || '',
           bookingStatus: 'PENDING',
-        }).then(() => console.log('[EMAIL TRACE] sendAdminBookingNotification() COMPLETED SUCCESSFULLY'))
-          .catch(err => console.error('[EMAIL TRACE] sendAdminBookingNotification() FAILED:', err));
+        }).then(() => console.log('[EMAIL TRACE] Admin Booking Email Sent SUCCESS'))
+          .catch(err => console.error('[EMAIL TRACE] Admin Booking Email FAILED:', err));
       } else {
         console.warn('[EMAIL TRACE] SKIPPED EMAIL SENDING - user or appointment is null', { userExists: !!user, appointmentExists: !!appointment });
       }
