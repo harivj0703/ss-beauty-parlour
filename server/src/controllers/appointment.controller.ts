@@ -143,17 +143,35 @@ export const createAppointment = async (req: AuthenticatedRequest, res: Response
 
   // Check slot availability
   if (staffProfileId) {
+    console.log(`Checking slot availability for staff: ${staffProfileId}, start: ${scheduledDate.toISOString()}, end: ${endTime.toISOString()}`);
     const conflicting = await prisma.appointment.findFirst({
       where: {
         staffProfileId: staffProfileId,
-        status: { notIn: ['CANCELLED'] },
+        status: { notIn: ['CANCELLED', 'COMPLETED'] },
         OR: [
-          { scheduledAt: { lt: endTime }, endTime: { gt: scheduledDate } },
+          {
+            scheduledAt: { lt: endTime },
+            endTime: { gt: scheduledDate }
+          }
         ],
       },
+      include: {
+        user: { select: { firstName: true, lastName: true } }
+      }
     });
+
     if (conflicting) {
-      res.status(409).json({ success: false, message: 'This time slot is already booked for the selected staff' });
+      console.log(`Conflict found! Existing booking ID: ${conflicting.id}, scheduledAt: ${conflicting.scheduledAt.toISOString()}, endTime: ${conflicting.endTime.toISOString()}`);
+      res.status(409).json({ 
+        success: false, 
+        message: 'This time slot is already booked for the selected staff',
+        conflicting: {
+          id: conflicting.id,
+          scheduledAt: conflicting.scheduledAt,
+          endTime: conflicting.endTime,
+          customerName: `${conflicting.user.firstName} ${conflicting.user.lastName}`
+        }
+      });
       return;
     }
   }
