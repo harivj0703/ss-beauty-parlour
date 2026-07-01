@@ -83,10 +83,13 @@ export const getAvailableSlots = async (req: Request, res: Response): Promise<vo
 
 // ── Create Appointment ───────────────────────────────────────────────
 export const createAppointment = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+  console.log('STEP 1: RECEIVED BOOKING REQUEST', JSON.stringify(req.body));
+  
   const { serviceIds, packageId, staffProfileId, scheduledAt, notes, couponCode } =
     req.body as CreateAppointmentBody;
 
   if (!scheduledAt) {
+    console.log('STEP 2: VALIDATION FAILED - scheduledAt missing');
     res.status(400).json({ success: false, message: 'Scheduled date/time is required' });
     return;
   }
@@ -104,6 +107,7 @@ export const createAppointment = async (req: AuthenticatedRequest, res: Response
       include: { packageServices: { include: { service: true } } },
     });
     if (!pkg) {
+      console.log('STEP 2: VALIDATION FAILED - Package not found:', packageId);
       res.status(404).json({ success: false, message: 'Package not found' });
       return;
     }
@@ -118,6 +122,7 @@ export const createAppointment = async (req: AuthenticatedRequest, res: Response
   }
 
   if (services.length === 0) {
+    console.log('STEP 2: VALIDATION FAILED - No active services selected');
     res.status(400).json({ success: false, message: 'Please select at least one service' });
     return;
   }
@@ -161,7 +166,7 @@ export const createAppointment = async (req: AuthenticatedRequest, res: Response
     });
 
     if (conflicting) {
-      console.log(`Conflict found! Existing booking ID: ${conflicting.id}, scheduledAt: ${conflicting.scheduledAt.toISOString()}, endTime: ${conflicting.endTime.toISOString()}`);
+      console.log(`STEP 2: SLOT CONFLICT FOUND! Existing booking ID: ${conflicting.id}`);
       res.status(409).json({ 
         success: false, 
         message: 'This time slot is already booked for the selected staff',
@@ -182,6 +187,8 @@ export const createAppointment = async (req: AuthenticatedRequest, res: Response
     const availableStaff = await prisma.staffProfile.findFirst({ where: { isAvailable: true } });
     assignedStaffId = availableStaff?.id || null;
   }
+
+  console.log('STEP 2: VALIDATION PASSED. Preparing database insert transaction...');
 
   let appointment;
   try {
@@ -214,6 +221,8 @@ export const createAppointment = async (req: AuthenticatedRequest, res: Response
           staffProfile: { include: { user: { select: { firstName: true, lastName: true } } } },
         },
       });
+
+      console.log('STEP 3: APPOINTMENT CREATED IN DB:', appt.id);
 
       // 2. Create payment record
       await tx.payment.create({
@@ -276,17 +285,19 @@ export const createAppointment = async (req: AuthenticatedRequest, res: Response
             data: { appointmentId: appt.id }
           }
         });
+        console.log('STEP 4: ADMIN DASHBOARD NOTIFICATION CREATED');
       }
 
       return appt;
     });
+    console.log('STEP 4.c: DB TRANSACTION COMMITTED SUCCESSFULLY');
   } catch (dbError: any) {
-    console.error('Database transaction failed:', dbError);
+    console.error('STEP 3/4 FAILURE - DATABASE TRANSACTION EXCEPTION:', dbError);
     res.status(500).json({ success: false, message: 'Booking failed. Try a different slot.' });
     return;
   }
 
-  // 5. Send confirmation emails asynchronously (do not block client response)
+  // 5. Send confirmation emails asynchronously (do not block client response or fail booking)
   prisma.user.findUnique({ where: { id: req.user!.userId }, select: { email: true, firstName: true, phone: true } })
     .then(async (user) => {
       if (user && appointment) {
@@ -298,6 +309,8 @@ export const createAppointment = async (req: AuthenticatedRequest, res: Response
         const timeStr = scheduledDate.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
         const serviceNames = services.map((s) => s.name).join(', ');
 
+        console.log('STEP 5: DISPATCHING ASYNCHRONOUS EMAILS');
+
         // 5.a Send confirmation email to Customer
         await sendBookingConfirmation(user.email, {
           appointmentId: appointment.id,
@@ -307,7 +320,8 @@ export const createAppointment = async (req: AuthenticatedRequest, res: Response
           staffName,
           amount: finalAmount,
           customerName: user.firstName,
-        }).catch(console.error);
+        }).then(() => console.log('STEP 5.a: CUSTOMER CONFIRMATION EMAIL SENT SUCCESS'))
+          .catch(err => console.error('STEP 5.a: CUSTOMER EMAIL DISPATCH EXCEPTION:', err));
 
         // 5.b Send booking alert email to Admin
         const { sendAdminBookingNotification } = await import('../utils/email');
@@ -324,13 +338,15 @@ export const createAppointment = async (req: AuthenticatedRequest, res: Response
           paymentStatus: 'PENDING',
           specialNotes: notes || '',
           bookingStatus: 'PENDING',
-        }).catch(console.error);
+        }).then(() => console.log('STEP 5.b: ADMIN BOOKING EMAIL SENT SUCCESS'))
+          .catch(err => console.error('STEP 5.b: ADMIN EMAIL DISPATCH EXCEPTION:', err));
       }
     })
     .catch((emailErr) => {
-      console.error('Asynchronous booking confirmation emails failed:', emailErr);
+      console.error('STEP 5 ASYNC FLOW EXCEPTION:', emailErr);
     });
 
+  console.log('STEP 6: RETURNING HTTP 201 SUCCESS RESPONSE TO CLIENT');
   res.status(201).json({ success: true, message: 'Appointment booked successfully! 🎉', data: appointment });
   return;
 };
@@ -351,10 +367,8 @@ export const getMyAppointments = async (req: AuthenticatedRequest, res: Response
       take: limit,
       orderBy: { scheduledAt: 'desc' },
       include: {
-        items: { include: { service: { select: { name: true, image: true } } } },
-        staffProfile: { include: { user: { select: { firstName: true, lastName: true, avatar: true } } } },
-        payment: { select: { status: true, method: true, amount: true } },
-        invoice: { select: { invoiceNumber: true } },
+        items: { include: { service: { select: { name: true, price: true } } } },
+        staffProfile: { include: { user: { select: { firstName: true, lastName: true } } } },
       },
     }),
     prisma.appointment.count({ where }),
@@ -362,28 +376,68 @@ export const getMyAppointments = async (req: AuthenticatedRequest, res: Response
 
   res.json({
     success: true,
-    message: 'Appointments fetched',
+    message: 'My appointments fetched',
     data: appointments,
     pagination: { page, limit, total, totalPages: Math.ceil(total / limit) },
   });
 };
 
-export const getAppointmentById = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
-  const appointment = await prisma.appointment.findFirst({
-    where: {
-      id: req.params.id,
-      ...(req.user!.role !== 'ADMIN' && { userId: req.user!.userId }),
-    },
+// ── Get Today Appointments ───────────────────────────────────────────
+export const getTodayAppointments = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+  const startOfDay = new Date();
+  startOfDay.setHours(0, 0, 0, 0);
+  const endOfDay = new Date();
+  endOfDay.setHours(23, 59, 59, 999);
+
+  const where: Record<string, unknown> = {
+    scheduledAt: { gte: startOfDay, lte: endOfDay },
+  };
+
+  // If user is Staff, return only their appointments
+  if (req.user!.role === 'STAFF') {
+    const staff = await prisma.staffProfile.findUnique({ where: { userId: req.user!.userId } });
+    if (staff) where.staffProfileId = staff.id;
+  }
+
+  const appointments = await prisma.appointment.findMany({
+    where,
+    orderBy: { scheduledAt: 'asc' },
     include: {
+      user: { select: { firstName: true, lastName: true, email: true, phone: true } },
+      items: { include: { service: { select: { name: true } } } },
+    },
+  });
+
+  res.json({ success: true, message: 'Today appointments fetched', data: appointments });
+};
+
+// ── Get Appointment By ID ───────────────────────────────────────────
+export const getAppointmentById = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+  const { id } = req.params;
+  const appointment = await prisma.appointment.findUnique({
+    where: { id },
+    include: {
+      user: { select: { firstName: true, lastName: true, email: true, phone: true, avatar: true } },
+      staffProfile: { include: { user: { select: { firstName: true, lastName: true, avatar: true } } } },
       items: { include: { service: true } },
-      staffProfile: { include: { user: { select: { firstName: true, lastName: true, avatar: true, phone: true } } } },
       payment: true,
       invoice: true,
       review: true,
     },
   });
+
   if (!appointment) {
     res.status(404).json({ success: false, message: 'Appointment not found' });
+    return;
+  }
+
+  // Authorize check: ADMIN, STAFF, or the Customer who owns it
+  if (
+    req.user!.role !== 'ADMIN' &&
+    req.user!.userId !== appointment.userId &&
+    (req.user!.role !== 'STAFF' || appointment.staffProfile?.userId !== req.user!.userId)
+  ) {
+    res.status(403).json({ success: false, message: 'Unauthorized access to appointment details' });
     return;
   }
   res.json({ success: true, message: 'Appointment fetched', data: appointment });
@@ -484,7 +538,7 @@ export const getAllAppointments = async (req: Request, res: Response): Promise<v
 
   res.json({
     success: true,
-    message: 'All appointments',
+    message: 'All appointments fetched',
     data: appointments,
     pagination: { page, limit, total, totalPages: Math.ceil(total / limit) },
   });
@@ -494,39 +548,10 @@ export const updateAppointmentStatus = async (req: Request, res: Response): Prom
   const { id } = req.params;
   const { status } = req.body;
 
-  const validStatuses = ['PENDING', 'CONFIRMED', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED'];
-  if (!validStatuses.includes(status)) {
-    res.status(400).json({ success: false, message: 'Invalid status' });
-    return;
-  }
-
-  const appointment = await prisma.appointment.update({ where: { id }, data: { status } });
-  res.json({ success: true, message: 'Status updated', data: appointment });
-};
-
-export const getTodayAppointments = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
-  const today = new Date();
-  const startOfDay = new Date(today.setHours(0, 0, 0, 0));
-  const endOfDay = new Date(today.setHours(23, 59, 59, 999));
-
-  const staffProfile = await prisma.staffProfile.findUnique({ where: { userId: req.user!.userId } });
-  if (!staffProfile) {
-    res.status(404).json({ success: false, message: 'Staff profile not found' });
-    return;
-  }
-
-  const appointments = await prisma.appointment.findMany({
-    where: {
-      staffProfileId: staffProfile.id,
-      scheduledAt: { gte: startOfDay, lte: endOfDay },
-      status: { notIn: ['CANCELLED'] },
-    },
-    orderBy: { scheduledAt: 'asc' },
-    include: {
-      user: { select: { firstName: true, lastName: true, phone: true, avatar: true } },
-      items: { include: { service: { select: { name: true, duration: true } } } },
-    },
+  const appointment = await prisma.appointment.update({
+    where: { id },
+    data: { status },
   });
 
-  res.json({ success: true, message: "Today's appointments", data: appointments });
+  res.json({ success: true, message: 'Appointment status updated', data: appointment });
 };
