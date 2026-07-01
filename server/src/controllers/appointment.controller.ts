@@ -298,10 +298,14 @@ export const createAppointment = async (req: AuthenticatedRequest, res: Response
     return;
   }
 
-  // 5. Send confirmation emails asynchronously (do not block client response or fail booking)
-  prisma.user.findUnique({ where: { id: req.user!.userId }, select: { email: true, firstName: true, phone: true } })
+  // 5. Send confirmation emails asynchronously
+  prisma.user.findUnique({ where: { id: req.user!.userId }, select: { id: true, email: true, firstName: true, phone: true } })
     .then(async (user) => {
       if (user && appointment) {
+        console.log(`[EMAIL TRACE] Customer ID: ${user.id}`);
+        console.log(`[EMAIL TRACE] Customer Name: ${user.firstName}`);
+        console.log(`[EMAIL TRACE] Customer Email: ${user.email}`);
+
         const staffName = appointment.staffProfile
           ? `${appointment.staffProfile.user.firstName} ${appointment.staffProfile.user.lastName}`
           : 'Our Expert';
@@ -312,7 +316,7 @@ export const createAppointment = async (req: AuthenticatedRequest, res: Response
 
         console.log('STEP 5: DISPATCHING ASYNCHRONOUS EMAILS');
 
-        console.log('[EMAIL TRACE] CALLING sendBookingConfirmation() for CUSTOMER:', user.email);
+        console.log(`[EMAIL TRACE] CALLING sendBookingConfirmationEmail() for CUSTOMER: ${user.email}`);
 
         // 5.a Send confirmation email to Customer
         await sendBookingConfirmation(user.email, {

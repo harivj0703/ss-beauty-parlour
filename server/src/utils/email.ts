@@ -92,29 +92,36 @@ const getEmailWrapper = (content: string, title: string) => `
 `;
 
 const sendEmail = async (to: string, subject: string, html: string): Promise<any> => {
-  console.log(`[EMAIL TRACE] ENTERED email.ts - sendEmail()`);
-  console.log(`[EMAIL TRACE] RECIPIENT: ${to}`);
-  console.log(`[EMAIL TRACE] SUBJECT: ${subject}`);
   try {
     const transporter = createTransporter();
     const sender = process.env.EMAIL_FROM || process.env.EMAIL_USER || process.env.SMTP_USER || '"SS Beauty Parlour" <ssbeautyparlour2528@gmail.com>';
-    console.log(`[EMAIL TRACE] FROM ADDRESS: ${sender}`);
     
-    console.log(`[EMAIL TRACE] ABOUT TO EXECUTE transporter.sendMail()`);
-    const info = await transporter.sendMail({
+    const mailOptions = {
       from: sender,
       to,
       subject,
       html,
-    });
+    };
+
+    console.log(`[EMAIL TRACE] mailOptions.to: ${mailOptions.to}`);
+    console.log(`[EMAIL TRACE] mailOptions.from: ${mailOptions.from}`);
+    console.log(`[EMAIL TRACE] mailOptions.subject: ${mailOptions.subject}`);
     
-    console.log(`[EMAIL TRACE] SMTP RESPONSE:`, info.response);
-    console.log(`[EMAIL TRACE] MESSAGE ID:`, info.messageId);
-    console.log(`[EMAIL TRACE] EMAIL SENT SUCCESSFULLY`);
+    const info = await transporter.sendMail(mailOptions);
+    
+    console.log(`[EMAIL TRACE] SMTP RESPONSE: ${info.response}`);
+    console.log(`[EMAIL TRACE] Message ID: ${info.messageId}`);
+    console.log(`[EMAIL TRACE] Accepted recipients: ${JSON.stringify(info.accepted)}`);
+    console.log(`[EMAIL TRACE] Rejected recipients: ${JSON.stringify(info.rejected)}`);
+    
+    if (info.rejected && info.rejected.length > 0) {
+      console.log(`[EMAIL TRACE] REJECTED ADDRESSES: ${JSON.stringify(info.rejected)}`);
+    }
+
     return info;
   } catch (error) {
-    console.error(`[EMAIL TRACE] SMTP EXCEPTION THROWN:`, error);
-    throw error; // DO NOT CATCH AND HIDE EXCEPTIONS
+    console.error(`[EMAIL TRACE] EMAIL FAILED:`, error);
+    throw error;
   }
 };
 
@@ -165,7 +172,15 @@ export const sendBookingConfirmation = async (
     <a href="${process.env.CLIENT_URL}/dashboard" class="btn">View My Booking 📱</a>
     <p class="text">See you soon! 💕<br><strong>SS Beauty Parlour Team</strong></p>
   `;
-  await sendEmail(to, '✅ Booking Confirmed – SS Beauty Parlour', getEmailWrapper(content, 'Booking Confirmation'));
+  
+  const subject = '✅ Booking Confirmed – SS Beauty Parlour';
+  const htmlLength = content.length;
+  console.log(`[EMAIL TRACE] Entering sendBookingConfirmationEmail()`);
+  console.log(`[EMAIL TRACE] Recipient: ${to}`);
+  console.log(`[EMAIL TRACE] Subject: ${subject}`);
+  console.log(`[EMAIL TRACE] HTML length: ${htmlLength}`);
+  
+  await sendEmail(to, subject, getEmailWrapper(content, 'Booking Confirmation'));
 };
 
 export const sendPasswordReset = async (to: string, resetLink: string): Promise<void> => {
