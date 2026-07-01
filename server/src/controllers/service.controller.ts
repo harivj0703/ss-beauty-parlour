@@ -149,6 +149,15 @@ export const getPopularServices = async (_req: Request, res: Response): Promise<
   res.json({ success: true, message: 'Popular services', data: services });
 };
 
+export const getPackages = async (_req: Request, res: Response): Promise<void> => {
+  const packages = await prisma.package.findMany({
+    where: { isActive: true },
+    include: { packageServices: { include: { service: true } } },
+    orderBy: { sortOrder: 'asc' },
+  });
+  res.json({ success: true, message: 'Packages fetched', data: packages });
+};
+
 export const createService = async (req: Request, res: Response): Promise<void> => {
   const { name, slug, categoryId, description, shortDesc, price, discountedPrice, duration, tags, isPopular, isFeatured } = req.body;
   let imageUrl: string | undefined;

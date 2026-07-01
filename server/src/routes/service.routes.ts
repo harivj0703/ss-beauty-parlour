@@ -9,6 +9,7 @@ const router = Router();
 router.get('/categories', service.getCategories);
 router.get('/categories/:slug', service.getCategoryBySlug);
 router.get('/', service.getServices);
+router.get('/packages', service.getPackages);
 router.get('/featured', service.getFeaturedServices);
 router.get('/popular', service.getPopularServices);
 router.get('/:slug', service.getServiceBySlug);

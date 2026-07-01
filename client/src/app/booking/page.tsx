@@ -66,7 +66,7 @@ function BookingWizard() {
     // Initial fetch of options
     Promise.all([
       api.get('/services'),
-      api.get('/admin/packages'),
+      api.get('/services/packages'),
       api.get('/staff'),
     ]).then(([sRes, pRes, stRes]) => {
       setServices(sRes.data.data || []);
