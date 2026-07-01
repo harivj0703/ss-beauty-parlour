@@ -106,18 +106,9 @@ const sendEmail = async (to: string, subject: string, html: string): Promise<any
   console.log(`[EMAIL TRACE] mailOptions.from: ${mailOptions.from}`);
   console.log(`[EMAIL TRACE] mailOptions.subject: ${mailOptions.subject}`);
   
-  const opts = transporter.options as any;
-  console.log(`[EMAIL TRACE] transporter.options:`, {
-    host: opts.host,
-    port: opts.port,
-    secure: opts.secure,
-    requireTLS: opts.requireTLS,
-    connectionTimeout: opts.connectionTimeout,
-    greetingTimeout: opts.greetingTimeout,
-    socketTimeout: opts.socketTimeout
-  });
-
-  console.log("BEFORE transporter.sendMail()");
+  console.log("========== STEP 1 ==========");
+  console.log("========== STEP 2 ==========");
+  console.log("========== BEFORE transporter.sendMail() ==========");
   let result;
   try {
     result = await transporter.sendMail(mailOptions);
