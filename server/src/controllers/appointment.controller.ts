@@ -260,7 +260,7 @@ export const createAppointment = async (req: AuthenticatedRequest, res: Response
         await tx.notification.create({
           data: {
             userId: adminUser.id,
-            type: 'NEW_BOOKING',
+            type: 'GENERAL',
             title: 'New Booking Received',
             message: `Customer: ${req.user!.userId}, Service: ${services[0]?.name}, Status: PENDING`,
             data: { appointmentId: appt.id }
