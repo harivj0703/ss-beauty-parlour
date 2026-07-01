@@ -6,10 +6,9 @@ const testSMTP = async () => {
   const user = process.env.EMAIL_USER || 'ssbeautyparlour2528@gmail.com';
   const pass = process.env.EMAIL_PASS || 'cglg uyqo jytu wvmq';
 
-  // Exactly matching the application's logic
   const secure = port === 465;
 
-  console.log('--- SMTP TEST SCRIPT ---');
+  console.log('--- STARTUP SMTP TEST ---');
   console.log(`Host: ${host}`);
   console.log(`Port: ${port}`);
   console.log(`Secure: ${secure}`);
@@ -26,13 +25,12 @@ const testSMTP = async () => {
 
   try {
     await transporter.verify();
-    console.log('Result: SUCCESS');
+    console.log('--- SMTP TEST: SUCCESS ---');
   } catch (err) {
-    console.log('Result: FAILED');
+    console.log('--- SMTP TEST: FAILED ---');
     console.error('Full Error Object:');
     console.error(err);
   }
-  process.exit(0);
 };
 
-testSMTP();
+module.exports = { testSMTP };

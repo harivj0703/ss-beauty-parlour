@@ -111,9 +111,13 @@ app.use(errorHandler);
 // ── Start Server ─────────────────────────────────────────────────────
 const PORT = parseInt(process.env.PORT || '5000', 10);
 
-app.listen(PORT, () => {
-  logger.info(`🌸 Glow Beauty Studio API running on port ${PORT}`);
-  logger.info(`Environment: ${process.env.NODE_ENV || 'development'}`);
+const { testSMTP } = require('../smtp-test');
+
+testSMTP().then(() => {
+  app.listen(PORT, () => {
+    logger.info(`🌸 Glow Beauty Studio API running on port ${PORT}`);
+    logger.info(`Environment: ${process.env.NODE_ENV || 'development'}`);
+  });
 });
 
 export default app;
