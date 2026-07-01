@@ -12,21 +12,19 @@ const createTransporter = () => {
     console.warn('[EMAIL] WARNING: EMAIL_USER / EMAIL_PASS not set. Emails will NOT be sent. Configure these in Render environment variables.');
   }
 
-  // port 465 = implicit SSL (secure:true), port 587 = STARTTLS (secure:false)
-  const secure = port === 465;
-
-  const config: any = {
+  const transporter = nodemailer.createTransport({
     host,
     port,
-    secure,
-    tls: { rejectUnauthorized: false },
-  };
-
-  if (user && pass) {
-    config.auth = { user, pass };
-  }
-
-  const transporter = nodemailer.createTransport(config);
+    secure: false, // Use STARTTLS on port 587
+    auth: {
+      user,
+      pass,
+    },
+    requireTLS: true,
+    tls: {
+      rejectUnauthorized: false,
+    },
+  });
   
   transporter.verify()
     .then(() => console.log('[EMAIL TRACE] SMTP Verify: SUCCESS'))
