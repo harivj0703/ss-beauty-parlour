@@ -183,88 +183,106 @@ export const createAppointment = async (req: AuthenticatedRequest, res: Response
     assignedStaffId = availableStaff?.id || null;
   }
 
-  const appointment = await prisma.appointment.create({
-    data: {
-      userId: req.user!.userId,
-      staffProfileId: assignedStaffId,
-      packageId: packageId || null,
-      bookingType: packageId ? 'PACKAGE' : 'SINGLE_SERVICE',
-      scheduledAt: scheduledDate,
-      endTime,
-      notes: notes || null,
-      totalAmount,
-      discountAmount: 0,
-      couponCode: couponCode || null,
-      couponDiscount,
-      finalAmount,
-      items: {
-        create: services.map((s) => ({
-          serviceId: s.id,
-          price: s.price,
-          duration: s.duration,
-        })),
-      },
-    },
-    include: {
-      items: { include: { service: true } },
-      staffProfile: { include: { user: { select: { firstName: true, lastName: true } } } },
-    },
-  });
+  let appointment;
+  try {
+    appointment = await prisma.$transaction(async (tx) => {
+      // 1. Create appointment
+      const appt = await tx.appointment.create({
+        data: {
+          userId: req.user!.userId,
+          staffProfileId: assignedStaffId,
+          packageId: packageId || null,
+          bookingType: packageId ? 'PACKAGE' : 'SINGLE_SERVICE',
+          scheduledAt: scheduledDate,
+          endTime,
+          notes: notes || null,
+          totalAmount,
+          discountAmount: 0,
+          couponCode: couponCode || null,
+          couponDiscount,
+          finalAmount,
+          items: {
+            create: services.map((s) => ({
+              serviceId: s.id,
+              price: s.price,
+              duration: s.duration,
+            })),
+          },
+        },
+        include: {
+          items: { include: { service: true } },
+          staffProfile: { include: { user: { select: { firstName: true, lastName: true } } } },
+        },
+      });
 
-  // Create payment record
-  await prisma.payment.create({
-    data: {
-      appointmentId: appointment.id,
-      userId: req.user!.userId,
-      amount: finalAmount,
-      method: 'STRIPE',
-      status: 'PENDING',
-    },
-  });
+      // 2. Create payment record
+      await tx.payment.create({
+        data: {
+          appointmentId: appt.id,
+          userId: req.user!.userId,
+          amount: finalAmount,
+          method: 'STRIPE',
+          status: 'PENDING',
+        },
+      });
 
-  // Create invoice
-  const invoiceNumber = generateInvoiceNumber();
-  await prisma.invoice.create({
-    data: {
-      invoiceNumber,
-      appointmentId: appointment.id,
-      userId: req.user!.userId,
-      amount: totalAmount,
-      tax: 0,
-      discount: couponDiscount,
-      total: finalAmount,
-    },
-  });
+      // 3. Create invoice
+      const invoiceNumber = generateInvoiceNumber();
+      await tx.invoice.create({
+        data: {
+          invoiceNumber,
+          appointmentId: appt.id,
+          userId: req.user!.userId,
+          amount: totalAmount,
+          tax: 0,
+          discount: couponDiscount,
+          total: finalAmount,
+        },
+      });
 
-  // Create notification
-  await prisma.notification.create({
-    data: {
-      userId: req.user!.userId,
-      type: 'BOOKING_CONFIRMED',
-      title: 'Booking Confirmed! 🌸',
-      message: `Your appointment for ${services[0]?.name} has been confirmed.`,
-      data: { appointmentId: appointment.id },
-    },
-  });
+      // 4. Create notification
+      await tx.notification.create({
+        data: {
+          userId: req.user!.userId,
+          type: 'BOOKING_CONFIRMED',
+          title: 'Booking Confirmed! 🌸',
+          message: `Your appointment for ${services[0]?.name} has been confirmed.`,
+          data: { appointmentId: appt.id },
+        },
+      });
 
-  // Send confirmation email
-  const user = await prisma.user.findUnique({ where: { id: req.user!.userId }, select: { email: true, firstName: true } });
-  if (user) {
-    const staffName = appointment.staffProfile
-      ? `${appointment.staffProfile.user.firstName} ${appointment.staffProfile.user.lastName}`
-      : 'Our Expert';
-    await sendBookingConfirmation(user.email, {
-      appointmentId: appointment.id,
-      serviceName: services.map((s) => s.name).join(', '),
-      date: scheduledDate.toLocaleDateString('en-IN', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }),
-      time: scheduledDate.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }),
-      staffName,
-      amount: finalAmount,
-      customerName: user.firstName,
-    }).catch(() => {});
+      return appt;
+    });
+  } catch (dbError: any) {
+    console.error('Database transaction failed:', dbError);
+    res.status(500).json({ success: false, message: 'Booking failed. Try a different slot.' });
+    return;
   }
 
+  // 5. Send confirmation email asynchronously (do not block client response)
+  prisma.user.findUnique({ where: { id: req.user!.userId }, select: { email: true, firstName: true } })
+    .then(async (user) => {
+      if (user && appointment) {
+        const staffName = appointment.staffProfile
+          ? `${appointment.staffProfile.user.firstName} ${appointment.staffProfile.user.lastName}`
+          : 'Our Expert';
+        await sendBookingConfirmation(user.email, {
+          appointmentId: appointment.id,
+          serviceName: services.map((s) => s.name).join(', '),
+          date: scheduledDate.toLocaleDateString('en-IN', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }),
+          time: scheduledDate.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }),
+          staffName,
+          amount: finalAmount,
+          customerName: user.firstName,
+        });
+      }
+    })
+    .catch((emailErr) => {
+      console.error('Asynchronous booking confirmation email failed:', emailErr);
+    });
+
   res.status(201).json({ success: true, message: 'Appointment booked successfully! 🎉', data: appointment });
+  return;
 };
 
 // ── Get My Appointments ──────────────────────────────────────────────
