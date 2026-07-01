@@ -11,6 +11,8 @@ import { router } from './routes/index';
 import { errorHandler } from './middleware/errorHandler';
 import { logger } from './utils/logger';
 
+console.log("SERVER BUILD ID: 2026-07-01 EMAIL DEBUG");
+
 // ── Temporary Log Interceptor ────────────────────────────────────────
 export const globalLogs: string[] = [];
 const originalLog = console.log;

@@ -92,6 +92,7 @@ const getEmailWrapper = (content: string, title: string) => `
 `;
 
 const sendEmail = async (to: string, subject: string, html: string): Promise<any> => {
+  console.log("EMAIL FILE VERSION: 2026-07-01");
   const transporter = createTransporter();
   const sender = process.env.EMAIL_FROM || process.env.EMAIL_USER || process.env.SMTP_USER || '"SS Beauty Parlour" <ssbeautyparlour2528@gmail.com>';
   
