@@ -3,7 +3,8 @@ import { logger } from './logger';
 
 const createTransporter = () => {
   const host = process.env.EMAIL_HOST || process.env.SMTP_HOST || 'smtp.gmail.com';
-  const port = parseInt(process.env.EMAIL_PORT || process.env.SMTP_PORT || '587', 10);
+  const portRaw = process.env.EMAIL_PORT || process.env.SMTP_PORT || '465';
+  const port = parseInt(portRaw, 10);
   const user = process.env.EMAIL_USER || process.env.SMTP_USER;
   const pass = process.env.EMAIL_PASS || process.env.SMTP_PASS;
 
@@ -11,14 +12,13 @@ const createTransporter = () => {
     console.warn('[EMAIL] WARNING: EMAIL_USER / EMAIL_PASS not set. Emails will NOT be sent. Configure these in Render environment variables.');
   }
 
+  // port 465 = implicit SSL (secure:true), port 587 = STARTTLS (secure:false)
+  const secure = port === 465;
+
   const config: any = {
     host,
     port,
-    secure: port === 465, // True for 465, False for 587
-    requireTLS: port !== 465,
-    connectionTimeout: 30000,
-    greetingTimeout: 30000,
-    socketTimeout: 30000,
+    secure,
     tls: { rejectUnauthorized: false },
   };
 
@@ -155,23 +155,29 @@ export const sendBookingConfirmation = async (
     customerName: string;
   }
 ): Promise<void> => {
-  const content = `
-    <div class="badge">Booking Confirmed! ✅</div>
-    <div class="greeting">Hi, ${data.customerName}! 🌸</div>
-    <p class="text">Great news! Your appointment at <strong>SS Beauty Parlour</strong> has been successfully confirmed. We're looking forward to pampering you!</p>
-    <div class="card">
-      <div class="card-row"><span class="card-label">🔖 Booking ID</span><span class="card-value">#${data.appointmentId.slice(-8).toUpperCase()}</span></div>
-      <div class="card-row"><span class="card-label">📋 Service</span><span class="card-value">${data.serviceName}</span></div>
-      <div class="card-row"><span class="card-label">📅 Date</span><span class="card-value">${data.date}</span></div>
-      <div class="card-row"><span class="card-label">⏰ Time</span><span class="card-value">${data.time}</span></div>
-      <div class="card-row"><span class="card-label">💆 Stylist</span><span class="card-value">${data.staffName}</span></div>
-      <div class="card-row"><span class="card-label">💰 Amount</span><span class="card-value">₹${data.amount.toLocaleString('en-IN')}</span></div>
-    </div>
-    <p class="text">📍 <strong>Salon Address:</strong><br>Old Bus Stand Opposite, Chengam, Thiruvannamalai District, Tamilnadu</p>
-    <p class="text">⚠️ <strong>Cancellation Policy:</strong><br>Please arrive 10 minutes before your appointment. If you need to reschedule or cancel, please do so at least 24 hours in advance.</p>
-    <a href="${process.env.CLIENT_URL}/dashboard" class="btn">View My Booking 📱</a>
-    <p class="text">See you soon! 💕<br><strong>SS Beauty Parlour Team</strong></p>
-  `;
+  let content = '';
+  try {
+    content = `
+      <div class="badge">Booking Confirmed! ✅</div>
+      <div class="greeting">Hi, ${data.customerName}! 🌸</div>
+      <p class="text">Great news! Your appointment at <strong>SS Beauty Parlour</strong> has been successfully confirmed. We're looking forward to pampering you!</p>
+      <div class="card">
+        <div class="card-row"><span class="card-label">🔖 Booking ID</span><span class="card-value">#${data.appointmentId.slice(-8).toUpperCase()}</span></div>
+        <div class="card-row"><span class="card-label">📋 Service</span><span class="card-value">${data.serviceName}</span></div>
+        <div class="card-row"><span class="card-label">📅 Date</span><span class="card-value">${data.date}</span></div>
+        <div class="card-row"><span class="card-label">⏰ Time</span><span class="card-value">${data.time}</span></div>
+        <div class="card-row"><span class="card-label">💆 Stylist</span><span class="card-value">${data.staffName}</span></div>
+        <div class="card-row"><span class="card-label">💰 Amount</span><span class="card-value">₹${data.amount.toLocaleString('en-IN')}</span></div>
+      </div>
+      <p class="text">📍 <strong>Salon Address:</strong><br>Old Bus Stand Opposite, Chengam, Thiruvannamalai District, Tamilnadu</p>
+      <p class="text">⚠️ <strong>Cancellation Policy:</strong><br>Please arrive 10 minutes before your appointment. If you need to reschedule or cancel, please do so at least 24 hours in advance.</p>
+      <a href="${process.env.CLIENT_URL}/dashboard" class="btn">View My Booking 📱</a>
+      <p class="text">See you soon! 💕<br><strong>SS Beauty Parlour Team</strong></p>
+    `;
+  } catch (templateErr) {
+    console.error(`[EMAIL TRACE] HTML Template Generation FAILED:`, templateErr);
+    throw templateErr;
+  }
   
   const subject = '✅ Booking Confirmed – SS Beauty Parlour';
   const htmlLength = content.length;

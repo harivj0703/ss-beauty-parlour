@@ -305,6 +305,7 @@ export const createAppointment = async (req: AuthenticatedRequest, res: Response
         console.log(`[EMAIL TRACE] Customer ID: ${user.id}`);
         console.log(`[EMAIL TRACE] Customer Name: ${user.firstName}`);
         console.log(`[EMAIL TRACE] Customer Email: ${user.email}`);
+        console.log(`[EMAIL TRACE] Booking ID: ${appointment.id}`);
 
         const staffName = appointment.staffProfile
           ? `${appointment.staffProfile.user.firstName} ${appointment.staffProfile.user.lastName}`
